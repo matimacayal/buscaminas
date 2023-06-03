@@ -78,9 +78,30 @@ def plant_flag(cell_row, cell_col, player_map):
         player_map[cell_row, cell_col] = COVERED_CELL_CHAR
     else:
         print("Can't flag pressed mine")
+        
+def add_coordinates(array):
+    num_rows, num_cols = array.shape
+
+    # Create index arrays for the first row and column
+    row_indexes = (np.arange(num_rows) % 10).reshape(-1, 1)
+    col_indexes = (np.arange(num_cols) % 10).reshape(1, -1)
+
+    # Create an empty array with the desired shape
+    new_array = np.full((num_rows + 1, num_cols + 1), "0", dtype=str)
+
+    # Assign the index values to the first row and column
+    new_array[0, 1:] = col_indexes[0, :]
+    new_array[1:, 0] = row_indexes[:, 0]
+
+    # Assign the original array values to the remaining cells
+    new_array[1:, 1:] = array
+    
+    return new_array
 
 def print_map(player_map):
-    for row in player_map:
+    print_map = add_coordinates(player_map)
+    
+    for row in print_map:
             print(' '.join(row))
 
 
@@ -89,9 +110,9 @@ FLAG_CELL_CHAR = "^"
 MINE_CELL_CHAR = "*"
 
 if __name__ == '__main__':
-    width = 8
-    height = 8
-    mines = 2
+    width = 30
+    height = 24
+    mines = 100
     
     np.set_printoptions(linewidth=150)
     mine_map = build_minesweeper_map(height, width, mines)
