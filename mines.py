@@ -10,11 +10,9 @@ def count_bombs(row, col, array):
             if ([r, c] != [row, col]) and (0 <= r < array.shape[0]) and (0 <= c < array.shape[1]):
                 if array[r, c] == -1:
                     sum += 1
-                # sum = sum + array[r,c]
     return sum
 
 def random_duple(R1, R2, N=1):
-    # duple = random.sample(list(itertools.product(range(R), repeat = 2)), N)
     duple = random.sample(list(itertools.product(range(R1), range(R2))), N)
     if N == 1:
         return duple[0]
@@ -29,21 +27,12 @@ def build_minesweeper_map(map_height, map_width, total_mines):
     for mine in mine_coordinates:
         arr[mine] = -1
         
-    # for element in np.nditer(arr):
-    #     print(element)    
-    # sum = count_bombs(mine_coordinates[3][0], mine_coordinates[3][1], arr)
-        
     for row, _ in enumerate(arr):
         for col, value in enumerate(_):
-            # print(row)
-            # print(col)
             if value != -1:
                 sum = count_bombs(row, col, arr)
                 arr[row,col] = sum
-                # print(sum)
-    
-    # print(arr)
-    
+                    
     return arr
 
 def clear_neighbour_cells(cell_row, cell_col, player_map, mine_map):
@@ -85,10 +74,8 @@ def plant_flag(cell_row, cell_col, player_map):
     current_value = player_map[cell_row, cell_col]
     if current_value == COVERED_CELL_CHAR:
         player_map[cell_row, cell_col] = FLAG_CELL_CHAR
-        # total_flags_planted += 1
     elif current_value == FLAG_CELL_CHAR:
         player_map[cell_row, cell_col] = COVERED_CELL_CHAR
-        # total_flags_planted -= 1
     else:
         print("Can't flag pressed mine")
 
@@ -100,7 +87,6 @@ def print_map(player_map):
 COVERED_CELL_CHAR = "."
 FLAG_CELL_CHAR = "^"
 MINE_CELL_CHAR = "*"
-total_flags_planted = 0
 
 if __name__ == '__main__':
     width = 8
@@ -110,9 +96,7 @@ if __name__ == '__main__':
     np.set_printoptions(linewidth=150)
     mine_map = build_minesweeper_map(height, width, mines)
     player_map = np.full((height, width), COVERED_CELL_CHAR, dtype=str)
-    # player_map[:] = COVERED_CELL_CHAR
     
-    # print(mine_map)    
     print_map(player_map)
         
     while np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0:
