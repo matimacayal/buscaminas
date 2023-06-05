@@ -43,9 +43,18 @@ def clear_neighbour_cells(cell_row, cell_col, player_map, mine_map):
                 # luego se revisan las vecinas, entonces para no entrar en loop para
                 # presionar una celda vecina este debe estar cubierta
                 if mine_map[r, c] == 0 and player_map[r, c] == COVERED_CELL_CHAR:
-                    print(f"pressing cell: {[r,c]}")
+                    # print(f"pressing cell: {[r,c]}")
                     press_cell(r, c, player_map, mine_map)
                 player_map[r, c] = str(mine_map[r, c])
+
+def fill_neighbour_cells(cell_row, cell_col, player_map):
+    for r in range(cell_row-1, cell_row+2):
+        for c in range(cell_col-1, cell_col+2):
+            if ([r, c] != [cell_row, cell_col]) and (0 <= r < player_map.shape[0]) and (0 <= c < player_map.shape[1]):
+                # acá la lógica es que cuando una celda es 0 primero se descubre,
+                # luego se revisan las vecinas, entonces para no entrar en loop para
+                # presionar una celda vecina este debe estar cubierta
+                player_map[r, c] = MINE_CELL_CHAR
 
 def press_cell(cell_row, cell_col, player_map, mine_map):
     if player_map[cell_row, cell_col] == FLAG_CELL_CHAR:
@@ -56,13 +65,15 @@ def press_cell(cell_row, cell_col, player_map, mine_map):
     if cell_value == -1:
         print("Mine. Lost game.")
         player_map[cell_row, cell_col] = MINE_CELL_CHAR
+        # player_map[:] = MINE_CELL_CHAR
+        fill_neighbour_cells(cell_row, cell_col, player_map)
         return
     elif cell_value == 0:
-        print(f"({cell_row},{cell_col}) cell empty, clearing neighbouring cells")
+        # print(f"({cell_row},{cell_col}) cell empty, clearing neighbouring cells")
         player_map[cell_row, cell_col] = "0"
         clear_neighbour_cells(cell_row, cell_col, player_map, mine_map)
     else:
-        print(f"cell_value = {cell_value}")
+        # print(f"cell_value = {cell_value}")
         player_map[cell_row, cell_col] = str(cell_value)
 
 def press_random_cell(mine_map, grid):
@@ -128,19 +139,33 @@ def fill_neighbours_with_flags(row, col, player_map):
                 if player_map[r, c] == COVERED_CELL_CHAR:
                     player_map[r, c] = FLAG_CELL_CHAR
 
-def ai_mark_flags(player_map):
+def press_neighbour_cells(row, col, player_map, mine_map):
+    for r in range(row-1, row+2):
+        for c in range(col-1, col+2):
+            if ([r, c] != [row, col]) and (0 <= r < player_map.shape[0]) and (0 <= c < player_map.shape[1]):
+                if player_map[r, c] == COVERED_CELL_CHAR:
+                    press_cell(r, c, player_map, mine_map)
+
+def ai_mark_flags(player_map, mine_map):
     # non_empty_cells = np.argwhere(player_map != '.')
-    non_empty_cells = np.argwhere(np.logical_and(player_map != FLAG_CELL_CHAR, player_map != COVERED_CELL_CHAR))
-    print(non_empty_cells)
+    non_empty_cells = np.argwhere(
+        np.logical_and(
+            player_map != FLAG_CELL_CHAR,
+            player_map != COVERED_CELL_CHAR
+            )
+        )
+    # print(non_empty_cells)
     for row, col in non_empty_cells:
-        print("checking ", row, col)
+        # print("checking ", row, col)
         flags, covers = count_neighbour_flags_and_covers(row, col, player_map)
         cell_value = int(player_map[row, col])
-        print("cell_value", cell_value)
+        # print("cell_value", cell_value)
         if cell_value == 0:
+            # TODO: Optimizar que además de no pasar por ceros no pase por columnas sin vecinos cubiertos
             continue
         elif flags == cell_value:
             # empty neighbouring cells
+            press_neighbour_cells(row, col, player_map, mine_map)
             pass
         elif flags > cell_value:
             print("ERROR: sobra una bandera!")
@@ -157,56 +182,58 @@ def ai_mark_flags(player_map):
                 pass
     
 
-COVERED_CELL_CHAR = "."
-FLAG_CELL_CHAR = "■" # "◘" #"█" # "•" # "¤"
-MINE_CELL_CHAR = "X" # "*"
+COVERED_CELL_CHAR = "." # "▫" # "▪" # "■" # "☐"
+FLAG_CELL_CHAR = "●" #"⬤" # "¤" # "◘" #"█" # "•" # "¤"
+MINE_CELL_CHAR = "*" # "*"
 
 if __name__ == '__main__':
     width = 30
     height = 24
-    mines = 100
+    mines = 150
     
     np.set_printoptions(linewidth=150)
-    mine_map = build_minesweeper_map(height, width, mines)
-    player_map = np.full((height, width), COVERED_CELL_CHAR, dtype=str)
-    
-    print_map(player_map)
-        
-    while np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0:
-        txt = input("input:")
-        if "exit" in txt.lower():
-            break
-        elif "r" in txt.lower():
-            r, c = press_random_cell(mine_map, player_map)
-        elif "f" in txt.lower():
-            _, txt = txt.split(" ")
-            r, c = txt.split(",")
-            r, c = [int(r), int(c)]
-            plant_flag(r, c, player_map)
-        elif "ai" in txt.lower():
-            # 1ro: contar los 88 y 99 alrededor
-            # 2do marcar las banderas
-            # 3ro presionar celdas
-            
-            # valor - flags
-            #     > 0 => si valor - 88's misma lógica
-            #     = 0 => si es que hay 88's, borrarlos,
-            #            si no, nada
-            #     < 0 => 
-            ai_mark_flags(player_map)
-        else:
-            r, c = txt.split(",")
-            r, c = [int(r), int(c)]
-            press_cell(r, c, player_map, mine_map)
+    while 1:
+        mine_map = build_minesweeper_map(height, width, mines)
+        player_map = np.full((height, width), COVERED_CELL_CHAR, dtype=str)
         
         print_map(player_map)
-        
-        if player_map[r,c] == MINE_CELL_CHAR:
-            print("💣You hit a mine! Try again 😁")
-            break
+            
+        while np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0:
+            txt = input("input:")
+            if "exit" in txt.lower():
+                break
+            elif "r" in txt.lower():
+                r, c = press_random_cell(mine_map, player_map)
+            elif "f" in txt.lower():
+                _, txt = txt.split(" ")
+                r, c = txt.split(",")
+                r, c = [int(r), int(c)]
+                plant_flag(r, c, player_map)
+            elif "ai" in txt.lower():
+                # 1ro: contar los 88 y 99 alrededor
+                # 2do marcar las banderas
+                # 3ro presionar celdas
+                
+                # valor - flags
+                #     > 0 => si valor - 88's misma lógica
+                #     = 0 => si es que hay 88's, borrarlos,
+                #            si no, nada
+                #     < 0 => 
+                ai_mark_flags(player_map, mine_map)
+            else:
+                r, c = txt.split(",")
+                r, c = [int(r), int(c)]
+                press_cell(r, c, player_map, mine_map)
+            
+            print_map(player_map)
+            
+            if player_map[r,c] == MINE_CELL_CHAR:
+                print("💣You hit a mine! Try again 😁")
+                break
     
-    if np.count_nonzero(player_map == COVERED_CELL_CHAR) == 0:
-        print("Congratulations! You won 🎉")
+        if np.count_nonzero(player_map == COVERED_CELL_CHAR) == 0:
+            print("Congratulations! You won 🎉")
+            break
     
     
     
