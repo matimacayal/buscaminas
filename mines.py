@@ -221,10 +221,15 @@ if __name__ == '__main__':
                 #     < 0 => 
                 ai_mark_flags(player_map, mine_map)
             else:
-                r, c = txt.split(",")
-                r, c = [int(r), int(c)]
-                press_cell(r, c, player_map, mine_map)
-            
+                try:
+                    r, c = txt.split(",")
+                    r, c = [int(r), int(c)]
+                    press_cell(r, c, player_map, mine_map)
+                except ValueError as err:
+                    print("Error:", err)
+                except:
+                    print("Input error, try again:")
+                                
             print_map(player_map)
             
             if player_map[r,c] == MINE_CELL_CHAR:
