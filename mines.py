@@ -209,7 +209,7 @@ if __name__ == '__main__':
                 r, c = txt.split(",")
                 r, c = [int(r), int(c)]
                 plant_flag(r, c, player_map)
-            elif "ai" in txt.lower():
+            elif "ai" in txt.lower() or not txt:
                 # 1ro: contar los 88 y 99 alrededor
                 # 2do marcar las banderas
                 # 3ro presionar celdas
