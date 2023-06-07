@@ -179,6 +179,89 @@ def ai_mark_flags(player_map, mine_map):
             elif covers > cell_value - flags:
                 # nada, falta info todavía
                 pass
+
+def get_neighbour_covers_pos(row, col, player_map, n_covers = None):
+    # TODO: optimize this function, np.argwhere or other might be used to get coordinates
+    #       maybe a 3x3 mask centered in row, col to make any other values false and
+    #       use the np.argwhere for player_map == COVERED_CELL_CHAR
+    coordinates = []
+    for r in range(row-1, row+2):
+        for c in range(col-1, col+2):
+            if ([r, c] != [row, col]) and (0 <= r < player_map.shape[0]) and (0 <= c < player_map.shape[1]):
+                cell = player_map[r, c]
+                if cell == COVERED_CELL_CHAR:
+                    coordinates.append([r,c])
+    if n_covers and len(coordinates) != n_covers:
+        print("ERROR")
+    return coordinates
+
+def count_common_items(arr1, arr2):
+    set1 = set(map(tuple, arr1))
+    set2 = set(map(tuple, arr2))
+
+    common_items = set1.intersection(set2)
+
+    count = len(common_items)
+    return count
+
+def ai2(player_map, mine_map):
+    non_empty_cells = np.argwhere(
+        np.logical_and(
+            player_map != FLAG_CELL_CHAR,
+            player_map != COVERED_CELL_CHAR
+            )
+        )
+    for row, col in non_empty_cells:
+        # print("checking ", row, col)
+        n_flags, n_covers = count_neighbour_flags_and_covers(row, col, player_map)
+        cell_value = int(player_map[row, col])
+        # print("cell_value", cell_value)
+        if cell_value == 0  or n_covers == 0:
+            continue
+        
+        covers_pos = get_neighbour_covers_pos(row, col, player_map, n_covers)
+        missing_mines = cell_value - n_flags # n_covers - (cell_value - n_flags)
+        
+        for r in range(row-1, row+2):
+            for c in range(col-1, col+2):
+                if ([r, c] != [row, col]) and (0 <= r < player_map.shape[0]) and (0 <= c < player_map.shape[1]):
+                    cell = player_map[r, c]
+                    if cell in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
+                        n_neighbour_flags, n_neighbour_covers = count_neighbour_flags_and_covers(r, c, player_map)
+                        neighbour_covers_pos = get_neighbour_covers_pos(r, c, player_map, n_neighbour_covers)
+                        neighbour_missing_mines = int(cell) - n_neighbour_flags # n_neighbour_covers - (int(cell) - n_neighbour_flags)
+                        
+                        n_common_covers = count_common_items(covers_pos, neighbour_covers_pos)
+                        
+                        non_common_covers = n_covers - n_common_covers
+                        n_remaining_mines = missing_mines - non_common_covers
+                        if n_remaining_mines > 0:
+                            # => n_remaining_mines number of mines in common covers
+                            if  n_remaining_mines == neighbour_missing_mines:
+                                # neighbour_non_common_covers = 0 mines
+                                # press neighbour_non_common_covers
+                                not_common = [item for item in neighbour_covers_pos if item not in covers_pos]
+                                
+                                for rr, cc in not_common:
+                                    if player_map[rr, cc] == COVERED_CELL_CHAR:
+                                        print("ai2 pressing: ", rr, ", ", cc)
+                                        press_cell(rr, cc, player_map, mine_map)
+                            elif n_remaining_mines < neighbour_missing_mines:
+                                # neighbour_missing_mines - n_remaining_mines
+                                #   is the number of mines in the neighbout_non_common_covers
+                                n_neighbour_not_common_mines = neighbour_missing_mines - n_remaining_mines
+                                if n_neighbour_not_common_mines == n_neighbour_covers - n_common_covers:
+                                    # put flags in this covers
+                                    not_common = [item for item in neighbour_covers_pos if item not in covers_pos]
+                                
+                                    for rr, cc in not_common:
+                                        if player_map[rr, cc] == COVERED_CELL_CHAR:
+                                            print("ai2 flag in: ", rr, ", ", cc)
+                                            plant_flag(rr, cc, player_map)
+                            else: # n_remaining_mines > neighbour_missing_mines:
+                                # ERROR
+                                print("ERROR")
+    
     
 
 COVERED_CELL_CHAR = "." # "▫" # "▪" # "■" # "☐"
@@ -211,7 +294,7 @@ if __name__ == '__main__':
                 r, c = txt.split(",")
                 r, c = [int(r), int(c)]
                 plant_flag(r, c, player_map)
-            elif "ai" in txt.lower() or not txt:
+            elif "ai1" in txt.lower() or not txt:
                 # 1ro: contar los 88 y 99 alrededor
                 # 2do marcar las banderas
                 # 3ro presionar celdas
@@ -222,6 +305,8 @@ if __name__ == '__main__':
                 #            si no, nada
                 #     < 0 => 
                 ai_mark_flags(player_map, mine_map)
+            elif "ai2" in txt.lower():
+                ai2(player_map, mine_map)
             else:
                 try:
                     r, c = txt.split(",")
