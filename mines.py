@@ -160,8 +160,7 @@ def ai_mark_flags(player_map, mine_map):
         flags, covers = count_neighbour_flags_and_covers(row, col, player_map)
         cell_value = int(player_map[row, col])
         # print("cell_value", cell_value)
-        if cell_value == 0:
-            # TODO: Optimizar que además de no pasar por ceros no pase por columnas sin vecinos cubiertos
+        if cell_value == 0 or covers == 0:
             continue
         elif flags == cell_value:
             # empty neighbouring cells
@@ -190,6 +189,9 @@ if __name__ == '__main__':
     width = 30
     height = 24
     mines = 150
+    # width = 78
+    # height = 49
+    # mines = 800
     
     np.set_printoptions(linewidth=150)
     while 1:
