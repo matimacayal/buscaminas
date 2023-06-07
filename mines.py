@@ -63,7 +63,7 @@ def press_cell(cell_row, cell_col, player_map, mine_map):
     
     cell_value = mine_map[cell_row, cell_col]
     if cell_value == -1:
-        print("Mine. Lost game.")
+        print(f"Mine. Lost game. ({cell_row}, {cell_col})")
         player_map[cell_row, cell_col] = MINE_CELL_CHAR
         # player_map[:] = MINE_CELL_CHAR
         fill_neighbour_cells(cell_row, cell_col, player_map)
@@ -156,8 +156,14 @@ def ai_mark_flags(player_map, mine_map):
         )
     # print(non_empty_cells)
     for row, col in non_empty_cells:
-        # print("checking ", row, col)
+        print("checking ", row, col)
         flags, covers = count_neighbour_flags_and_covers(row, col, player_map)
+        # Se está cayendo en esta línea porque apreta una mina,
+        # los vecinos se ponen "*" y luego esto aprieta un vecino
+        # y se cae al hacer int("*")
+        # Entonces hay que resolver 2 cosas:
+        # 1. que cuando hay bomba termine el juego
+        # 2. si se apreto una bomba hay algo no funcionando bien, identificar y resolver
         cell_value = int(player_map[row, col])
         # print("cell_value", cell_value)
         if cell_value == 0 or covers == 0:
@@ -167,7 +173,7 @@ def ai_mark_flags(player_map, mine_map):
             press_neighbour_cells(row, col, player_map, mine_map)
             pass
         elif flags > cell_value:
-            print("ERROR: sobra una bandera!")
+            print(f"ERROR: sobra una bandera! ({row}, {col})")
         elif flags < cell_value:
             if covers == cell_value - flags:
                 # put flag in neighbour covers
