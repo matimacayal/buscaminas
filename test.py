@@ -57,3 +57,13 @@ common_items = set1.intersection(set2)
 count = len(common_items)
 
 print(count)  # Output: 2
+
+## Test for counting how many zeros
+# 
+import numpy as np
+arr = np.array([['X', '2', '3', '.', '1'],
+                ['.', '.', '.', '.', '.'],
+                ['7', '.', '9', '9', '.'],
+                ['.', '.', '6', '.', '1'],
+                ['2', '.', '5', '6', '.']])
+np.count_nonzero(arr == "0")
