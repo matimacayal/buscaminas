@@ -146,7 +146,7 @@ def press_neighbour_cells(row, col, player_map, mine_map):
                 if player_map[r, c] == COVERED_CELL_CHAR:
                     press_cell(r, c, player_map, mine_map)
 
-def ai_mark_flags(player_map, mine_map):
+def ai_count_press_and_flag(player_map, mine_map):
     # non_empty_cells = np.argwhere(player_map != '.')
     non_empty_cells = np.argwhere(
         np.logical_and(
@@ -210,7 +210,8 @@ def count_common_items(arr1, arr2):
     count = len(common_items)
     return count
 
-def ai2(player_map, mine_map):
+def ai2_2nd_level_counting(player_map, mine_map):
+    # TODO: Modularize, rename variables and simplify this logic when possible
     non_empty_cells = np.argwhere(
         np.logical_and(
             player_map != FLAG_CELL_CHAR,
@@ -269,7 +270,22 @@ def ai2(player_map, mine_map):
                             else: # min_n_shared_mines > neighbour_missing_mines:
                                 # ERROR
                                 print("ERROR: min_n_shared_mines > neighbour_missing_mines")
+
+def get_next_move(total_covers, player_map):
+    next_move = ""
+    if np.count_nonzero(player_map == "0") == 0:
+        next_move = "r"
+    else:
+        covers_left = np.count_nonzero(player_map == COVERED_CELL_CHAR)
+        if total_covers > covers_left:
+            total_covers = covers_left
+            next_move = "ai1"
+        else:
+            next_move = "ai2"
     
+    print(f"next move: {next_move}")
+    return total_covers, next_move
+        
 
 COVERED_CELL_CHAR = "." # "▫" # "▪" # "■" # "☐"
 FLAG_CELL_CHAR = "●" #"⬤" # "¤" # "◘" #"█" # "•" # "¤"
@@ -283,6 +299,9 @@ if __name__ == '__main__':
     # height = 49
     # mines = 800
     
+    total_covers = width * height
+    total_flags = 0
+    
     np.set_printoptions(linewidth=150)
     while 1:
         mine_map = build_minesweeper_map(height, width, mines)
@@ -292,6 +311,9 @@ if __name__ == '__main__':
             
         while np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0:
             txt = input("input:")
+            if not txt:
+                total_covers, txt = get_next_move(total_covers, player_map)
+            
             if "exit" in txt.lower():
                 break
             elif "r" in txt.lower():
@@ -301,19 +323,10 @@ if __name__ == '__main__':
                 r, c = txt.split(",")
                 r, c = [int(r), int(c)]
                 plant_flag(r, c, player_map)
-            elif "ai1" in txt.lower() or not txt:
-                # 1ro: contar los 88 y 99 alrededor
-                # 2do marcar las banderas
-                # 3ro presionar celdas
-                
-                # valor - flags
-                #     > 0 => si valor - 88's misma lógica
-                #     = 0 => si es que hay 88's, borrarlos,
-                #            si no, nada
-                #     < 0 => 
-                ai_mark_flags(player_map, mine_map)
+            elif "ai1" in txt.lower():
+                ai_count_press_and_flag(player_map, mine_map)
             elif "ai2" in txt.lower():
-                ai2(player_map, mine_map)
+                ai2_2nd_level_counting(player_map, mine_map)
             else:
                 try:
                     r, c = txt.split(",")
