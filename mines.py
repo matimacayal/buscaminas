@@ -271,7 +271,7 @@ def ai2_2nd_level_counting(player_map, mine_map):
                                 # ERROR
                                 print("ERROR: min_n_shared_mines > neighbour_missing_mines")
 
-def get_next_move(total_covers, player_map):
+def get_next_move(last_move, total_covers, player_map):
     next_move = ""
     if np.count_nonzero(player_map == "0") == 0:
         next_move = "r"
@@ -282,6 +282,8 @@ def get_next_move(total_covers, player_map):
             next_move = "ai1"
         else:
             next_move = "ai2"
+            # if last_move == "ai2":
+            #     next_move = "r"
     
     print(f"next move: {next_move}")
     return total_covers, next_move
@@ -301,6 +303,7 @@ if __name__ == '__main__':
     
     total_covers = width * height
     total_flags = 0
+    next_move = ""
     
     np.set_printoptions(linewidth=150)
     while 1:
@@ -312,24 +315,24 @@ if __name__ == '__main__':
         while np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0:
             txt = input("input:")
             if not txt:
-                total_covers, txt = get_next_move(total_covers, player_map)
+                total_covers, next_move = get_next_move(next_move, total_covers, player_map)
             
-            if "exit" in txt.lower():
+            if "exit" in next_move.lower():
                 break
-            elif "r" in txt.lower():
+            elif "r" in next_move.lower():
                 r, c = press_random_cell(mine_map, player_map)
-            elif "f" in txt.lower():
-                _, txt = txt.split(" ")
-                r, c = txt.split(",")
+            elif "f" in next_move.lower():
+                _, next_move = next_move.split(" ")
+                r, c = next_move.split(",")
                 r, c = [int(r), int(c)]
                 plant_flag(r, c, player_map)
-            elif "ai1" in txt.lower():
+            elif "ai1" in next_move.lower():
                 ai_count_press_and_flag(player_map, mine_map)
-            elif "ai2" in txt.lower():
+            elif "ai2" in next_move.lower():
                 ai2_2nd_level_counting(player_map, mine_map)
             else:
                 try:
-                    r, c = txt.split(",")
+                    r, c = next_move.split(",")
                     r, c = [int(r), int(c)]
                     press_cell(r, c, player_map, mine_map)
                 except ValueError as err:
