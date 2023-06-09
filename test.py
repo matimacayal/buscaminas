@@ -67,3 +67,9 @@ arr = np.array([['X', '2', '3', '.', '1'],
                 ['.', '.', '6', '.', '1'],
                 ['2', '.', '5', '6', '.']])
 np.count_nonzero(arr == "0")
+
+## Test selecting a random element from list
+#
+import numpy as np
+arr = np.array([1, 22, 33, 44, 55, 64, 5, 56, 6, 7, 78, 8, 9])
+np.random.choice(arr)
