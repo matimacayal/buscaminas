@@ -37,3 +37,23 @@ arr = np.array([['X', '2', '3', '.', '1'],
 
 # indices = np.argwhere(arr != '.')
 indices = np.argwhere(np.logical_and(arr != 'X', arr != '.'))
+
+
+
+
+## Test for checking common tuples in list
+#
+arr1 = [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6]]
+arr2 = [[4, 5], [5, 6], [6, 7], [7, 8], [8, 9]]
+
+# Convert the lists to sets
+set1 = set(map(tuple, arr1))
+set2 = set(map(tuple, arr2))
+
+# Find the common items
+common_items = set1.intersection(set2)
+
+# Get the count of common items
+count = len(common_items)
+
+print(count)  # Output: 2
