@@ -33,7 +33,8 @@ arr = np.array([['X', '2', '3', '.', '1'],
                 ['.', '.', '.', '.', '.'],
                 ['7', '.', '9', '9', '.'],
                 ['.', '.', '6', '.', '1'],
-                ['2', '.', '5', '6', '.']])
+                ['2', '.', '5', '6', '.'],
+                ['.', '2', '1', '.', '.']])
 
 # indices = np.argwhere(arr != '.')
 indices = np.argwhere(np.logical_and(arr != 'X', arr != '.'))
@@ -71,5 +72,12 @@ np.count_nonzero(arr == "0")
 ## Test selecting a random element from list
 #
 import numpy as np
-arr = np.array([1, 22, 33, 44, 55, 64, 5, 56, 6, 7, 78, 8, 9])
-np.random.choice(arr)
+arr1 = np.array([1, 22, 33, 44, 55, 64, 5, 56, 6, 7, 78, 8, 9])
+np.random.choice(arr1)
+arr2 = np.array([[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9]])
+np.random.choice(arr2)
+
+
+
+
+
