@@ -76,6 +76,14 @@ def press_cell(cell_row, cell_col, player_map, mine_map):
         # print(f"cell_value = {cell_value}")
         player_map[cell_row, cell_col] = str(cell_value)
 
+def has_min_one_neigh_number(cell_row, cell_col, player_map):
+    for r in range(cell_row-1, cell_row+2):
+        for c in range(cell_col-1, cell_col+2):
+            if ([r, c] != [cell_row, cell_col]) and (0 <= r < player_map.shape[0]) and (0 <= c < player_map.shape[1]):
+                if player_map[r, c] in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
+                    return True
+    return False
+
 def press_random_cell(mine_map, player_map):
     flags_n = np.count_nonzero(player_map == FLAG_CELL_CHAR)
     mines_n = np.count_nonzero(mine_map == -1)
@@ -86,12 +94,24 @@ def press_random_cell(mine_map, player_map):
         print("just random")
         height, width = player_map.shape
         cell_row, cell_col = random_duple(height-1, width-1)
+    # elif flags_n < mines_n * 0.5:
+    #     # random over covered places
+    #     print("random over covers")
+    #     covered_cells = np.argwhere(player_map == COVERED_CELL_CHAR)
+    #     random_row = np.random.randint(len(covered_cells))
+    #     cell_row, cell_col = covered_cells[random_row, :]
     else:
-        # random over covered places
-        print("random over covers")
+        # random over covered neighour of numbers
         covered_cells = np.argwhere(player_map == COVERED_CELL_CHAR)
-        random_row = np.random.randint(len(covered_cells))
-        cell_row, cell_col = covered_cells[random_row, :]
+        possible_cells = np.empty((0,2), dtype=int)
+        for r, c in covered_cells:
+            # print(f"checking cell [{r}, {c}]")
+            if has_min_one_neigh_number(r, c, player_map):
+                possible_cells = np.append(possible_cells, [np.array([r,c])], axis=0)
+                # print("added cell")
+        # print("possible cells for random:", possible_cells)
+        random_row = np.random.randint(len(possible_cells))
+        cell_row, cell_col = possible_cells[random_row, :]
     
     print(f"random: [{cell_row}, {cell_col}]")
     press_cell(cell_row, cell_col, player_map, mine_map)
