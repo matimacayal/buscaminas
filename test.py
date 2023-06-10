@@ -77,6 +77,20 @@ np.random.choice(arr1)
 arr2 = np.array([[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9]])
 np.random.choice(arr2)
 
+## Test adding duple to np.array
+#
+import numpy as np
+
+# Initialize an empty array with a shape of (0, 3)
+empty_array = np.empty((0, 3), dtype=int)
+
+# Append elements to the array
+row1 = np.array([1, 2, 3])
+row2 = np.array([4, 5, 6])
+empty_array = np.append(empty_array, [row1], axis=0)
+empty_array = np.append(empty_array, [row2], axis=0)
+
+print(empty_array)
 
 
 
