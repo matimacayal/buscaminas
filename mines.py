@@ -76,10 +76,25 @@ def press_cell(cell_row, cell_col, player_map, mine_map):
         # print(f"cell_value = {cell_value}")
         player_map[cell_row, cell_col] = str(cell_value)
 
-def press_random_cell(mine_map, grid):
-    height, width = grid.shape
-    cell_row, cell_col = random_duple(height-1, width-1)
-    press_cell(cell_row, cell_col, grid, mine_map)
+def press_random_cell(mine_map, player_map):
+    flags_n = np.count_nonzero(player_map == FLAG_CELL_CHAR)
+    mines_n = np.count_nonzero(mine_map == -1)
+    cell_row, cell_col = [0,0]
+    
+    if flags_n < mines_n * 0.1:
+        # to little flags, just random
+        print("just random")
+        height, width = player_map.shape
+        cell_row, cell_col = random_duple(height-1, width-1)
+    else:
+        # random over covered places
+        print("random over covers")
+        covered_cells = np.argwhere(player_map == COVERED_CELL_CHAR)
+        random_row = np.random.randint(len(covered_cells))
+        cell_row, cell_col = covered_cells[random_row, :]
+    
+    print(f"random: [{cell_row}, {cell_col}]")
+    press_cell(cell_row, cell_col, player_map, mine_map)
     return cell_row, cell_col
     
 def plant_flag(cell_row, cell_col, player_map):
