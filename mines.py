@@ -147,6 +147,8 @@ def press_neighbour_cells(row, col, player_map, mine_map):
                     press_cell(r, c, player_map, mine_map)
 
 def ai_count_press_and_flag(player_map, mine_map):
+    before_covers_n = np.count_nonzero(player_map == COVERED_CELL_CHAR)
+    
     # non_empty_cells = np.argwhere(player_map != '.')
     non_empty_cells = np.argwhere(
         np.logical_and(
@@ -185,6 +187,12 @@ def ai_count_press_and_flag(player_map, mine_map):
             elif covers > cell_value - flags:
                 # nada, falta info todavía
                 pass
+    
+    after_covers_n = np.count_nonzero(player_map == COVERED_CELL_CHAR)
+    move_result = before_covers_n - after_covers_n
+    print("move result =", move_result)
+    return move_result
+
 
 def get_neighbour_covers_pos(row, col, player_map, n_covers = None):
     # TODO: optimize this function, np.argwhere or other might be used to get coordinates
@@ -211,6 +219,8 @@ def count_common_items(arr1, arr2):
     return count
 
 def ai2_2nd_level_counting(player_map, mine_map):
+    before_covers_n = np.count_nonzero(player_map == COVERED_CELL_CHAR)
+    
     # TODO: Modularize, rename variables and simplify this logic when possible
     non_empty_cells = np.argwhere(
         np.logical_and(
@@ -247,13 +257,12 @@ def ai2_2nd_level_counting(player_map, mine_map):
                             # => min_n_shared_mines number of mines in common covers
                             if  min_n_shared_mines == neighbour_missing_mines:
                                 # => neighbour_non_common_covered has 0 mines
-                                # so press neighbour_non_common_covered
                                 neigh_not_common = [item for item in neighbour_covers_pos if item not in covers_pos]
                                 
                                 if len(neigh_not_common) > 0:
                                     for rr, cc in neigh_not_common:
                                         if player_map[rr, cc] == COVERED_CELL_CHAR:
-                                            print(f"ai2 pressing [{rr}, {cc}] , from cell [{r}, {c}] neigh of [{row}, {col}]")
+                                            # print(f"ai2 pressing [{rr}, {cc}] , from cell [{r}, {c}] neigh of [{row}, {col}]")
                                             press_cell(rr, cc, player_map, mine_map)
                                 else: # len(neigh_not_common) == 0
                                     min_not_shared_mines = missing_mines - neighbour_missing_mines
@@ -261,49 +270,68 @@ def ai2_2nd_level_counting(player_map, mine_map):
                                     if len(original_not_common) == min_not_shared_mines:
                                         for rr, cc in original_not_common:
                                             if player_map[rr, cc] == COVERED_CELL_CHAR:
-                                                print(f"ai2 flag in [{rr}, {cc}] , from cell [{r}, {c}] neigh of [{row}, {col}]")
+                                                # print(f"ai2 flag in [{rr}, {cc}] , from cell [{r}, {c}] neigh of [{row}, {col}]")
                                                 plant_flag(rr, cc, player_map)
                                         
                             elif min_n_shared_mines < neighbour_missing_mines:
                                 # => nothing can be concluded, for now
-                                print(f"min_n_shared_mines < neighbour_missing_mines from cell [{r}, {c}], neigh of [{row}, {col}]")
+                                #print(f"min_n_shared_mines < neighbour_missing_mines from cell [{r}, {c}], neigh of [{row}, {col}]")
+                                pass
                             else: # min_n_shared_mines > neighbour_missing_mines:
                                 # ERROR
                                 print("ERROR: min_n_shared_mines > neighbour_missing_mines")
+    
+    after_covers_n = np.count_nonzero(player_map == COVERED_CELL_CHAR)
+    move_result = before_covers_n - after_covers_n
+    print("move result =", move_result)
+    return move_result
 
-def get_next_move(last_move, total_covers, player_map):
+def get_next_move(last_move, last_move_result, player_map):
     next_move = ""
     if np.count_nonzero(player_map == "0") == 0:
         next_move = "r"
-    else:
-        covers_left = np.count_nonzero(player_map == COVERED_CELL_CHAR)
-        if total_covers > covers_left:
-            total_covers = covers_left
-            next_move = "ai1"
-        else:
-            next_move = "ai2"
-            # if last_move == "ai2":
-            #     next_move = "r"
+        print(f"next move: {next_move}")
+        return next_move
     
+    if last_move_result > 0:
+        next_move = AI1_KEY
+    elif last_move_result == 0:
+        if last_move == AI1_KEY:
+            next_move = AI2_KEY
+        elif last_move == AI2_KEY:
+            next_move = "r"
+        else:
+            next_move = "r"
+    else: # last_move_result < 0
+        print("ERROR: last_move_result < 0")
+        
     print(f"next move: {next_move}")
-    return total_covers, next_move
+    return next_move
         
 
 COVERED_CELL_CHAR = "." # "▫" # "▪" # "■" # "☐"
 FLAG_CELL_CHAR = "●" #"⬤" # "¤" # "◘" #"█" # "•" # "¤"
 MINE_CELL_CHAR = "*" # "*"
 
+AI1_KEY = "a1"
+AI2_KEY = "a2"
+RANDOM_KEY = "r"
+EXIT_KEY = "exit"
+FLAG_KEY = "f"
+
 if __name__ == '__main__':
     width = 30
     height = 24
-    mines = 150
+    mines = 200
     # width = 78
     # height = 49
     # mines = 800
     
-    total_covers = width * height
+    # total_covers = width * height
     total_flags = 0
     next_move = ""
+    move_result = 0
+    # TODO: implement a better way of calcuating each move_result
     
     np.set_printoptions(linewidth=150)
     while 1:
@@ -315,21 +343,25 @@ if __name__ == '__main__':
         while np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0:
             txt = input("input:")
             if not txt:
-                total_covers, next_move = get_next_move(next_move, total_covers, player_map)
+                previous_move = next_move
+                next_move = get_next_move(previous_move, move_result, player_map)
+            else:
+                next_move = txt
             
-            if "exit" in next_move.lower():
+            if EXIT_KEY in next_move.lower():
                 break
-            elif "r" in next_move.lower():
+            elif RANDOM_KEY in next_move.lower():
                 r, c = press_random_cell(mine_map, player_map)
-            elif "f" in next_move.lower():
+                move_result += 1
+            elif FLAG_KEY in next_move.lower():
                 _, next_move = next_move.split(" ")
                 r, c = next_move.split(",")
                 r, c = [int(r), int(c)]
                 plant_flag(r, c, player_map)
-            elif "ai1" in next_move.lower():
-                ai_count_press_and_flag(player_map, mine_map)
-            elif "ai2" in next_move.lower():
-                ai2_2nd_level_counting(player_map, mine_map)
+            elif AI1_KEY in next_move.lower():
+                move_result = ai_count_press_and_flag(player_map, mine_map)
+            elif AI2_KEY in next_move.lower():
+                move_result = ai2_2nd_level_counting(player_map, mine_map)
             else:
                 try:
                     r, c = next_move.split(",")
