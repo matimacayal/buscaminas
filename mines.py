@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import itertools
+import time
 
 # function that given a coordinate can iterate over theit's neighbours and count mines
 def count_bombs(row, col, mines_map):
@@ -423,7 +424,7 @@ FLAG_KEY = "f"
 
 MAP_WIDTH = 30
 MAP_HEIGHT = 24
-TOTAL_MINES = 150
+TOTAL_MINES = 200
 
 if __name__ == '__main__':
     width = MAP_WIDTH
@@ -436,18 +437,30 @@ if __name__ == '__main__':
     # total_covers = width * height
     total_flags = 0
     next_move = ""
-    move_result = 0
-    # TODO: implement a better way of calcuating each move_result
+    move_result = 0 # TODO: implement a better way of calcuating each move_result
+    
+    tries = 0
+    start_time = time.time()
     
     np.set_printoptions(linewidth=150)
     while 1:
         mine_map = build_minesweeper_map(height, width, mines)
         player_map = np.full((height, width), COVERED_CELL_CHAR, dtype=str)
+        tries += 1
         
         print_map(player_map)
-            
-        while np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0:
-            txt = input("input:")
+        
+        # Conditions to win
+        # - all flags planted
+        # - no mines pressed/displayed
+        # - all covers presses (zero displayed)
+        # while np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0 or MINE_CELL_CHAR in player_map or np.count_nonzero(player_map == FLAG_CELL_CHAR) != TOTAL_MINES:
+        while (
+            np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0
+            or MINE_CELL_CHAR in player_map
+            or np.count_nonzero(player_map == FLAG_CELL_CHAR) != TOTAL_MINES
+        ):
+            txt = "" # input("input:")
             if not txt:
                 previous_move = next_move
                 next_move = get_next_move(previous_move, move_result, player_map)
@@ -484,8 +497,16 @@ if __name__ == '__main__':
                 print("💣You hit a mine! Try again 😁")
                 break
     
-        if np.count_nonzero(player_map == COVERED_CELL_CHAR) == 0:
+        if (
+            np.count_nonzero(player_map == COVERED_CELL_CHAR) == 0
+            and MINE_CELL_CHAR not in player_map
+            and np.count_nonzero(player_map == FLAG_CELL_CHAR) == TOTAL_MINES
+        ):
+            total_time = time.time() - start_time
             print("Congratulations! You won 🎉")
+            print(f"Grid size [{MAP_WIDTH}, {MAP_HEIGHT}] with {TOTAL_MINES} mines")
+            print(f"It took {tries} tries")
+            print(f"and {total_time // 60} minutes and {total_time % 60} seconds")
             break
     
     
