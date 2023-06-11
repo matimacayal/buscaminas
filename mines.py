@@ -84,12 +84,20 @@ def has_min_one_neigh_number(cell_row, cell_col, player_map):
                     return True
     return False
 
+def has_min__one_none_covered_neigh(cell_row, cell_col, player_map):
+    for r in range(cell_row-1, cell_row+2):
+        for c in range(cell_col-1, cell_col+2):
+            if ([r, c] != [cell_row, cell_col]) and (0 <= r < player_map.shape[0]) and (0 <= c < player_map.shape[1]):
+                if player_map[r, c] in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", FLAG_CELL_CHAR]:
+                    return True
+    return False
+
 def press_random_cell(mine_map, player_map):
     flags_n = np.count_nonzero(player_map == FLAG_CELL_CHAR)
     mines_n = np.count_nonzero(mine_map == -1)
     cell_row, cell_col = [0,0]
     
-    if flags_n < mines_n * 0.1:
+    if flags_n < mines_n * 0.01:
         # to little flags, just random
         print("just random")
         height, width = player_map.shape
@@ -100,19 +108,78 @@ def press_random_cell(mine_map, player_map):
     #     covered_cells = np.argwhere(player_map == COVERED_CELL_CHAR)
     #     random_row = np.random.randint(len(covered_cells))
     #     cell_row, cell_col = covered_cells[random_row, :]
+    # else:
+    #     # random over covered cells with number neighours
+    #     covered_cells = np.argwhere(player_map == COVERED_CELL_CHAR)
+    #     possible_cells = np.empty((0,2), dtype=int)
+    #     for r, c in covered_cells:
+    #         # print(f"checking cell [{r}, {c}]")
+    #         if has_min_one_neigh_number(r, c, player_map):
+    #             possible_cells = np.append(possible_cells, [np.array([r,c])], axis=0)
+    #             # print("added cell")
+    #     # print("possible cells for random:", possible_cells)
+    #     random_row = np.random.randint(len(possible_cells))
+    #     cell_row, cell_col = possible_cells[random_row, :]
     else:
-        # random over covered neighour of numbers
+        print("random with probability over covers with number neighbours")
         covered_cells = np.argwhere(player_map == COVERED_CELL_CHAR)
         possible_cells = np.empty((0,2), dtype=int)
-        for r, c in covered_cells:
-            # print(f"checking cell [{r}, {c}]")
-            if has_min_one_neigh_number(r, c, player_map):
-                possible_cells = np.append(possible_cells, [np.array([r,c])], axis=0)
-                # print("added cell")
-        # print("possible cells for random:", possible_cells)
-        random_row = np.random.randint(len(possible_cells))
-        cell_row, cell_col = possible_cells[random_row, :]
-    
+        
+        flags = np.count_nonzero(player_map == FLAG_CELL_CHAR)
+        remaining_mines = TOTAL_MINES - flags
+        just_random_cell_probability = remaining_mines / len(covered_cells)
+        print("remaining_mines", remaining_mines)
+        print("len(covered_cells)", len(covered_cells))
+        print("just_random_cell_probability", just_random_cell_probability)
+        
+        least_probable_cell = [-1,-1]
+        least_probability = just_random_cell_probability
+        
+        for row, col in covered_cells:
+            print(f"checking cell [{row}, {col}]")
+            if has_min__one_none_covered_neigh(row, col, player_map):
+                cell_value = -1
+                neighbours_probability = 0
+                # checking cell neighbours
+                for r in range(row-1, row+2):
+                    for c in range(col-1, col+2):
+                        if ([r, c] != [row, col]) and (0 <= r < player_map.shape[0]) and (0 <= c < player_map.shape[1]):
+                            cell = player_map[r, c]
+                            print(f"checking [{r}, {c}] from [{row}, {col}]")
+                            if cell in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
+                                n_neighbour_flags, n_neighbour_covered = count_neighbour_flags_and_covers(r, c, player_map)
+                                cell_value = int(cell)                                
+                                probability = (cell_value - n_neighbour_flags) / n_neighbour_covered
+                                if probability > 1:
+                                    print(f"ERROR: probability {probability} > 0")
+                                    return
+                                if probability > neighbours_probability:
+                                    neighbours_probability = probability
+                print("neighbours_probability:", neighbours_probability)
+                if cell_value == -1:
+                    # => neighbours_probability == 0
+                    # no number neighbours
+                    print("cell_value == -1")
+                    if least_probability == just_random_cell_probability:
+                        print("least_probability == just_random_cell_probability")
+                        least_probable_cell = [row, col]
+                else:
+                    print("cell_value != -1")
+                    if neighbours_probability <= least_probability:
+                        print("neighbours_probability <= least_probability")
+                        least_probability = neighbours_probability
+                        least_probable_cell = [row, col]
+        
+        if least_probable_cell == [-1, -1]:
+            # no cell is better than random over all covered cells
+            print("no cell is better than random over all covered cells")
+            covered_cells = np.argwhere(player_map == COVERED_CELL_CHAR)
+            random_row = np.random.randint(len(covered_cells))
+            least_probable_cell = covered_cells[random_row, :]
+        
+        cell_row, cell_col = least_probable_cell
+        print(f"least probability = {least_probability} in cell [{cell_row}, {cell_col}]")
+        
     print(f"random: [{cell_row}, {cell_col}]")
     press_cell(cell_row, cell_col, player_map, mine_map)
     return cell_row, cell_col
@@ -354,10 +421,14 @@ RANDOM_KEY = "r"
 EXIT_KEY = "exit"
 FLAG_KEY = "f"
 
+MAP_WIDTH = 30
+MAP_HEIGHT = 24
+TOTAL_MINES = 150
+
 if __name__ == '__main__':
-    width = 30
-    height = 24
-    mines = 200
+    width = MAP_WIDTH
+    height = MAP_HEIGHT
+    mines = TOTAL_MINES
     # width = 78
     # height = 49
     # mines = 800
