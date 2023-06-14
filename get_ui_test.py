@@ -59,16 +59,16 @@ mine_color = (255, 0, 0)  # Red color for mines
 # Convert the grayscale image to a numpy array
 game_grid = get_np_array_screenshot()
 
-# Translate the colors in the numpy array to their corresponding values
-for color, value in number_colors.items():
-    mask = np.all(game_grid == color, axis=2)
-    game_grid[mask] = value
+# # Translate the colors in the numpy array to their corresponding values
+# for color, value in number_colors.items():
+#     mask = np.all(game_grid == color, axis=2)
+#     game_grid[mask] = value
 
-mask = np.all(game_grid == mine_color, axis=2)
-game_grid[mask] = -1  # Use -1 to represent mines in the game grid
+# mask = np.all(game_grid == mine_color, axis=2)
+# game_grid[mask] = -1  # Use -1 to represent mines in the game grid
 
-# Now you have the game grid as a numpy array with values representing the cells
-print(game_grid)
+# # Now you have the game grid as a numpy array with values representing the cells
+# print(game_grid)
 
 
 
