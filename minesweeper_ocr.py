@@ -7,16 +7,12 @@ img_rgb = cv2.imread('./images/minesweeper_24x30_soclose.png')
 img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
 template_top_left_corner = cv2.imread( '.\images\minesweeper_map_top_left_corner.png',0)
 template_bottom_right_corner = cv2.imread( '.\images\minesweeper_map_bottom_right_corner.png',0)
-np.set_printoptions(linewidth=200)
 
+np.set_printoptions(linewidth=200)
 threshold = 0.95
+
 res = cv2.matchTemplate(img_gray,template_top_left_corner,cv2.TM_CCOEFF_NORMED)
 loc = np.where( res >= threshold)
-# print(zip(*loc[::-1]))
-# print(list(zip(*loc[::-1])))
-# print(list(zip(*loc[::-1]))[0])
-# print(np.array(zip(*loc[::-1])))
-# print(np.array(list(zip(*loc[::-1]))))
 template_top_left_coord = np.concatenate(loc)[::-1]  # [value + 1 for value in list(zip(*loc[::-1]))[0]]
 
 res = cv2.matchTemplate(img_gray,template_bottom_right_corner,cv2.TM_CCOEFF_NORMED)
@@ -35,7 +31,7 @@ print("bottom_right_corner", bottom_right_corner)
 print("grid_size", cols, rows)
 
 # color in cv2
-# color = np.arra([B, G, R])
+# color     = np.array([ B , G , R ])
 white       = np.array([255,255,254])
 dark_gray   = np.array([131,131,131])
 red         = np.array([0,0,254])
@@ -118,42 +114,5 @@ for row in range(rows):
 
 # print(player_map)
 print(np.array2string(player_map, separator=' ', formatter={'str_kind': lambda x: x}))
-            
-            
-            
-            
-            
-        
-        
-        
-        
 
 
-
-# top_left_corner = template_top_left_coord + (9,17)
-# bottom_right_corner = template_bottom_right_coord - (1,1)
-# grid_size = (bottom_right_corner - top_left_corner) / 20
-
-# print(zip(*loc[::-1]))
-# print(list(zip(*loc[::-1])))
-# print(list(zip(*loc[::-1]))[0])
-
-
-# for pt in zip(*loc[::-1]):
-#     print(pt)
-#     cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
-
-# cv2.imwrite('images/result.png',img_rgb)
-
-
-# white       = np.array([255,255,254])
-# dark_gray   = np.array([131,131,131])
-# red         = np.array([0,0,254])
-# black       = np.array([0,0,0])
-# gray        = np.array([192,192,192])
-# blue        = np.array([254,0,0])
-# green       = np.array([0,128,0])
-# purple      = np.array([128,0,0])
-# light_purple= np.array([147,58,58])
-# burgundy    = np.array([0,0,128])
-# cyan        = np.array([128,128,0])
