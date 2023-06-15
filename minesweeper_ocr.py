@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+import windows_ui as wui
+import time
 
 # TODO: refactor - poner los tipos de las variables de entrada y salida de las funciones
 
@@ -70,7 +72,7 @@ def _get_grid_corners(img_rgb):
     
     return top_left_corner, bottom_right_corner
 
-def minesweeper_ocr(img_rgb):
+def minesweeper_ocr(img_rgb: cv2.Mat):
     top_left_corner, bottom_right_corner = _get_grid_corners(img_rgb)
     if not top_left_corner.any() or not bottom_right_corner.any():
         return None
@@ -78,9 +80,9 @@ def minesweeper_ocr(img_rgb):
     cols, rows = (bottom_right_corner - top_left_corner) // 20
     player_map = np.empty([rows, cols], dtype=str)
 
-    print("top_left_corner", top_left_corner)
-    print("bottom_right_corner", bottom_right_corner)
-    print("grid_size", cols, rows)
+    # print("top_left_corner", top_left_corner)
+    # print("bottom_right_corner", bottom_right_corner)
+    # print("grid_size", cols, rows)
 
     white_tolerance = 10
     tolerance = 3
@@ -104,7 +106,7 @@ def minesweeper_ocr(img_rgb):
                     player_map[row, col] = FLAG_CELL_CHAR
                 elif np.allclose(pixel_9_6, GRAY, atol=3) and np.allclose(pixel_9_14, GRAY, atol=tolerance):
                     player_map[row, col] = COVERED_CELL_CHAR
-                    print(f"cell [{row},{col}] Covered. Pixel colors ({x9},{y6}) {pixel_9_6} ({x9},{y14}) {pixel_9_14}.")
+                    # print(f"cell [{row},{col}] Covered. Pixel colors ({x9},{y6}) {pixel_9_6} ({x9},{y14}) {pixel_9_14}.")
                 else:
                     print("ERROR: no cell match for colors")
             elif np.allclose(pixel_0_1, DARK_GRAY, atol=tolerance):
@@ -127,18 +129,24 @@ def minesweeper_ocr(img_rgb):
     
     return player_map
 
-def get_screenshot(window_title: str = ""):
-    # TODO: usar funcion del modulo screenshot
+def get_screenshot(window_title: str = "") -> cv2.Mat:
+    # TODO: avisar en caso que ventana del minesweeper no esté abierta
     img_rgb = None
-    # if not window_title:
-    img_rgb = cv2.imread('./images/minesweeper_24x30_soclose.png')
-    # img_rgb = cv2.imread('./images/2023-06-12 (4).png')
+    if not window_title:
+        img_rgb = cv2.imread('./images/minesweeper_24x30_soclose.png')
+        # img_rgb = cv2.imread('./images/2023-06-12 (4).png')
+    else:
+        image = wui.take_screenshot(window_title)
+        img_rgb = np.array(image) 
+        # Convert RGB to BGR 
+        img_rgb = img_rgb[:, :, ::-1].copy()
     return img_rgb
 
 def display_array(arr):
     print(np.array2string(arr, separator=' ', formatter={'str_kind': lambda x: x}))
 
 def main():
+    start_time = time.time()
     game_image = get_screenshot("Minesweeper X")
     if not game_image.any():
         return
@@ -148,6 +156,7 @@ def main():
         return
     
     display_array(player_map)
+    print(f"took {time.time() - start_time} s")
         
 if __name__ == '__main__':
     main()
