@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 
 
-def take_screenshot(window_title):
+def take_screenshot(window_title: str, display:bool = False) -> Image:
     # Get the window's position and size
     window_info = pyautogui.getWindowsWithTitle(window_title)
     if len(window_info) == 0:
@@ -17,7 +17,10 @@ def take_screenshot(window_title):
 
     screenshot = pyautogui.screenshot(region=(window_left, window_top, window_width, window_height))
 
-    screenshot.show()
+    if display:
+        screenshot.show()
+    
+    return screenshot
 
     # Replace 'Window Title' with the actual title of the window you want to capture
     # display_window_screenshot('Minesweeper X')
