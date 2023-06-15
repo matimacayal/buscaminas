@@ -149,10 +149,12 @@ def main():
     start_time = time.time()
     game_image = get_screenshot("Minesweeper X")
     if not game_image.any():
+        print("Window not found")
         return
     
     player_map = minesweeper_ocr(game_image)
     if player_map is None:
+        print("couldn't get ocr")
         return
     
     display_array(player_map)
