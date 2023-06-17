@@ -3,12 +3,56 @@ import random
 import itertools
 import time
 
-class MinesweeperGame:
-    def __init__(self):
-        ...
+class MinesweeperEngine:
+    COVERED_CELL_CHAR = "." # "▫" # "▪" # "■" # "☐"
+    FLAG_CELL_CHAR = "●" #"⬤" # "¤" # "◘" #"█" # "•" # "¤"
+    MINE_CELL_CHAR = "*" # "*"
+    
+    level = {
+        1: "easy",
+        2: "medium",
+        3: "hard",
+        4: "challenge",
+        5: "impossible",
+    }
+    
+    map_config = {
+        "easy": [8, 8, 10],         # 15.625% of cells are a mine
+        "medium": [16, 16, 40],     # 15.625%
+        "hard": [16, 30, 99],       # 20.625%
+        "challenge": [24, 30, 200], # 27.78%
+        "impossible": [48, 60, 800] # 27.78%
+    }
+    
+    def __init__(self, map_height: int, map_width: int, mines: int):
+        # TODO: check if we want to automatically create the map here or in another function by the user.
+        self.width = map_width
+        self.height = map_height
+        self.mines_total = mines
+        self.map_array = self.build_minesweeper_map(self.height, self.width, self.mines_total)
+    
+    @classmethod
+    def create_by_difficulty(cls, difficulty):
+        # TODO: add a default configuration for minesweeper
+        if type(difficulty) is int:
+            if difficulty not in cls.level.keys():
+                print("Please enter a level between 1 to 5 or the difficulty")
+            difficulty = cls.level[difficulty]
+        elif type(difficulty) is not str:
+            print("Please enter a valid argument type (int or str)")
+        
+        if difficulty not in cls.map_config.keys():
+            print("Please enter a valid difficulty (easy, medium, hard, challenge, impossible)")
+        
+        h, w, mines = cls.map_config[difficulty]
+        
+        return cls(map_height=h, map_width=w, mines=mines)
     
     def __repr__(self):
-        return f"Item()"
+        return (f"MinesweeperGame("
+                "height: {self.height}, "
+                "width: {self.height}, "
+                "mines_total: {self.mines_total})")
     
     # function that given a coordinate can iterate over theit's neighbours and count mines
     def _count_bombs(self, row: int, col: int, mines_map: np.ndarray) -> int:
@@ -20,7 +64,7 @@ class MinesweeperGame:
                         sum += 1
         return sum
 
-    def _random_duple(self, R1: int, R2: int, N: int = 1):
+    def _random_duple(self, R1: int, R2: int, N: int = 1) -> list:
         duple = random.sample(list(itertools.product(range(R1), range(R2))), N)
         if N == 1:
             return duple[0]
@@ -40,61 +84,30 @@ class MinesweeperGame:
                 if value != -1:
                     sum = self._count_bombs(row, col, arr)
                     arr[row,col] = sum
-                        
         return arr
 
-    def _clear_neighbour_cells(self, cell_row, cell_col, player_map, mine_map):
+    def _press_neighbours(self, cell_row: int, cell_col: int, player_map: np.ndarray, mine_map: np.ndarray) -> None:
         for r in range(cell_row-1, cell_row+2):
             for c in range(cell_col-1, cell_col+2):
                 if ([r, c] != [cell_row, cell_col]) and (0 <= r < player_map.shape[0]) and (0 <= c < player_map.shape[1]):
                     # acá la lógica es que cuando una celda es 0 primero se descubre,
                     # luego se revisan las vecinas, entonces para no entrar en loop para
                     # presionar una celda vecina este debe estar cubierta
-                    if mine_map[r, c] == 0 and player_map[r, c] == COVERED_CELL_CHAR:
+                    if mine_map[r, c] == 0 and player_map[r, c] == self.COVERED_CELL_CHAR:
                         # print(f"pressing cell: {[r,c]}")
-                        press_cell(r, c, player_map, mine_map)
+                        self.press_cell_action(r, c, player_map, mine_map)
                     player_map[r, c] = str(mine_map[r, c])
     
-    def _fill_neighbour_cells(self, cell_row, cell_col, player_map):
+    def _fill_neighbour_with(self, cell_row: int, cell_col: int, player_map: np.ndarray, character: str) -> None:
         for r in range(cell_row-1, cell_row+2):
             for c in range(cell_col-1, cell_col+2):
                 if ([r, c] != [cell_row, cell_col]) and (0 <= r < player_map.shape[0]) and (0 <= c < player_map.shape[1]):
                     # acá la lógica es que cuando una celda es 0 primero se descubre,
                     # luego se revisan las vecinas, entonces para no entrar en loop para
                     # presionar una celda vecina este debe estar cubierta
-                    player_map[r, c] = MINE_CELL_CHAR
+                    player_map[r, c] = character
     
-    def press_cell(self, cell_row, cell_col, player_map, mine_map):
-        if player_map[cell_row, cell_col] == FLAG_CELL_CHAR:
-            print("Can't press flagged mine")
-            return
-        
-        cell_value = mine_map[cell_row, cell_col]
-        if cell_value == -1:
-            print(f"Mine. Lost game. ({cell_row}, {cell_col})")
-            player_map[cell_row, cell_col] = MINE_CELL_CHAR
-            # player_map[:] = MINE_CELL_CHAR
-            self._fill_neighbour_cells(cell_row, cell_col, player_map)
-            return
-        elif cell_value == 0:
-            # print(f"({cell_row},{cell_col}) cell empty, clearing neighbouring cells")
-            player_map[cell_row, cell_col] = "0"
-            self._clear_neighbour_cells(cell_row, cell_col, player_map, mine_map)
-        else:
-            # print(f"cell_value = {cell_value}")
-            player_map[cell_row, cell_col] = str(cell_value)
-    
-    def plant_flag(self, cell_row, cell_col, player_map):
-        # TODO: Implement total flags planted
-        current_value = player_map[cell_row, cell_col]
-        if current_value == COVERED_CELL_CHAR:
-            player_map[cell_row, cell_col] = FLAG_CELL_CHAR
-        elif current_value == FLAG_CELL_CHAR:
-            player_map[cell_row, cell_col] = COVERED_CELL_CHAR
-        else:
-            print("Can't flag pressed mine")
-    
-    def _add_coordinates(self, array):
+    def _add_coordinates(self, array: np.ndarray) -> np.ndarray:
         num_rows, num_cols = array.shape
 
         # Create index arrays for the first row and column
@@ -112,14 +125,56 @@ class MinesweeperGame:
         new_array[1:, 1:] = array
         
         return new_array
-
-    def print_map(self, player_map):
-        print_map = self._add_coordinates(player_map)
+    
+    def press_cell_action(self, cell_row: int, cell_col: int, player_map: np.ndarray, mine_map: np.ndarray) -> None:
+        assert 0 <= cell_row < self.height, "Row value out of minesweeper map bounds"
+        assert 0 <= cell_col < self.width, "Column value out of minesweeper map bounds"
         
-        for row in print_map:
-                print(' '.join(row))
+        if player_map[cell_row, cell_col] == self.FLAG_CELL_CHAR:
+            print("Can't press flagged mine")
+            return
+        
+        cell_value = mine_map[cell_row, cell_col]
+        if cell_value == -1:
+            print(f"Mine. Lost game. ({cell_row}, {cell_col})")
+            player_map[cell_row, cell_col] = self.MINE_CELL_CHAR
+            # player_map[:] = MINE_CELL_CHAR
+            self._fill_neighbour_with(cell_row, cell_col, player_map, self.MINE_CELL_CHAR)
+            return
+        elif cell_value == 0:
+            # print(f"({cell_row},{cell_col}) cell empty, clearing neighbouring cells")
+            player_map[cell_row, cell_col] = "0"
+            self._press_neighbours(cell_row, cell_col, player_map, mine_map)
+        else:
+            # print(f"cell_value = {cell_value}")
+            player_map[cell_row, cell_col] = str(cell_value)
+    
+    def plant_flag_action(self, cell_row: int, cell_col: int, player_map: np.ndarray) -> None:
+        # TODO: Implement total flags planted
+        assert 0 <= cell_row < self.height, "Row value out of minesweeper map bounds"
+        assert 0 <= cell_col < self.width, "Column value out of minesweeper map bounds"
+        
+        current_value = player_map[cell_row, cell_col]
+        if current_value == self.COVERED_CELL_CHAR:
+            player_map[cell_row, cell_col] = self.FLAG_CELL_CHAR
+        elif current_value == self.FLAG_CELL_CHAR:
+            player_map[cell_row, cell_col] = self.COVERED_CELL_CHAR
+        else:
+            print("Can't flag pressed mine")
+
+    def print_map(self, player_map: np.ndarray) -> None:
+        map_cli = self._add_coordinates(player_map)
+        
+        for row in map_cli:
+            print(' '.join(row))
 
 class RobotPlayer:
+    AI1_KEY = "a1"
+    AI2_KEY = "a2"
+    RANDOM_KEY = "r"
+    EXIT_KEY = "exit"
+    FLAG_KEY = "f"
+    
     def __init__(self):
         ...
         self.game = None
@@ -208,7 +263,7 @@ class RobotPlayer:
                                 cell = player_map[r, c]
                                 # print(f"checking [{r}, {c}] from [{row}, {col}]")
                                 if cell in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
-                                    n_neighbour_flags, n_neighbour_covered = count_neighbour_flags_and_covers(r, c, player_map)
+                                    n_neighbour_flags, n_neighbour_covered = self._count_neighbour_flags_and_covers(r, c, player_map)
                                     cell_value = int(cell)                                
                                     probability = (cell_value - n_neighbour_flags) / n_neighbour_covered
                                     if probability > 1:
@@ -267,7 +322,7 @@ class RobotPlayer:
                     if player_map[r, c] == COVERED_CELL_CHAR:
                         player_map[r, c] = FLAG_CELL_CHAR
 
-    def p_ress_neighbour_cells(self, row, col, player_map, mine_map):
+    def _press_neighbour_cells(self, row, col, player_map, mine_map):
         for r in range(row-1, row+2):
             for c in range(col-1, col+2):
                 if ([r, c] != [row, col]) and (0 <= r < player_map.shape[0]) and (0 <= c < player_map.shape[1]):
@@ -449,19 +504,7 @@ class RobotPlayer:
 
         
 
-COVERED_CELL_CHAR = "." # "▫" # "▪" # "■" # "☐"
-FLAG_CELL_CHAR = "●" #"⬤" # "¤" # "◘" #"█" # "•" # "¤"
-MINE_CELL_CHAR = "*" # "*"
 
-AI1_KEY = "a1"
-AI2_KEY = "a2"
-RANDOM_KEY = "r"
-EXIT_KEY = "exit"
-FLAG_KEY = "f"
-
-MAP_WIDTH = 30
-MAP_HEIGHT = 24
-TOTAL_MINES = 200
 
 if __name__ == '__main__':
     width = MAP_WIDTH
