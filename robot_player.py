@@ -100,7 +100,6 @@ class RobotPlayer:
                 continue
             elif flags == cell_value:
                 # empty neighbouring cells
-                # self.next_moves.append({'movement': self.PRESS_NEIGHBOUR_CELLS, 'row_col': [1,2]}) # TODO: hacer bien esto, que meta un press para cada celda
                 self._press_neighbour_cells(row, col, player_map)
             elif flags > cell_value:
                 print(f"ERROR: sobra una bandera! ({row}, {col})")
@@ -115,7 +114,7 @@ class RobotPlayer:
                     # nada, falta info todavía
                     pass
         
-        move_result = len(self.next_moves) # TODO: Ojo que acá el número es menor actualmente a lo real dado que PRESS_NEIGHBOUR_CELLS y FILL_NEIGHBOUR_WITH_FLAGS se cuenta como 1 movimiento cada uno
+        move_result = len(self.next_moves)
         print("move result =", move_result)
         return move_result
     
@@ -132,13 +131,8 @@ class RobotPlayer:
             cell_row, cell_col = self._random_duple(height-1, width-1)
             
             print(f"random: [{cell_row}, {cell_col}]")
-            # press_cell(cell_row, cell_col, player_map, mine_map)
             self.next_moves.append({"movement":self.PRESS, "row_col": [cell_row, cell_col]})
             return 1
-        # elif flags_n < mines_n * 0.5:
-        #     self._random_over_covered_cells(player_map)
-        # else:
-        #     self._random_over_covered_with_number_neighs(player_map)
         
         print("random with probability over covers with number neighbours")
         covered_cells = np.argwhere(player_map == COVERED_CELL_CHAR)
@@ -222,7 +216,7 @@ class RobotPlayer:
                 continue
             
             covers_pos = self._get_neighbour_covers_pos(row, col, player_map, n_covered)
-            missing_mines = cell_value - n_flags # n_covered - (cell_value - n_flags)
+            missing_mines = cell_value - n_flags
             
             # checking cell neighbours
             for r in range(row-1, row+2):
@@ -232,7 +226,7 @@ class RobotPlayer:
                         if cell in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
                             n_neighbour_flags, n_neighbour_covered = self.count_neighbour_flags_and_covers(r, c, player_map)
                             neighbour_covers_pos = self._get_neighbour_covers_pos(r, c, player_map, n_neighbour_covered)
-                            neighbour_missing_mines = int(cell) - n_neighbour_flags # n_neighbour_covered - (int(cell) - n_neighbour_flags)
+                            neighbour_missing_mines = int(cell) - n_neighbour_flags
                             
                             n_common_covered = self._count_common_items(covers_pos, neighbour_covers_pos)
                             
@@ -248,7 +242,7 @@ class RobotPlayer:
                                         for rr, cc in neigh_not_common:
                                             if player_map[rr, cc] == COVERED_CELL_CHAR:
                                                 # print(f"ai2 pressing [{rr}, {cc}] , from cell [{r}, {c}] neigh of [{row}, {col}]")
-                                                # press_cell(rr, cc, player_map, mine_map)
+
                                                 self.next_moves.append({"movement":self.PRESS, "row_col": [rr, cc]})
                                     else: # len(neigh_not_common) == 0
                                         min_not_shared_mines = missing_mines - neighbour_missing_mines
@@ -257,7 +251,6 @@ class RobotPlayer:
                                             for rr, cc in original_not_common:
                                                 if player_map[rr, cc] == COVERED_CELL_CHAR:
                                                     # print(f"ai2 flag in [{rr}, {cc}] , from cell [{r}, {c}] neigh of [{row}, {col}]")
-                                                    # plant_flag(rr, cc, player_map)
                                                     self.next_moves.append({"movement":self.PLANT_FLAG, "row_col": [rr, cc]})
                                             
                                 elif min_n_shared_mines < neighbour_missing_mines:
@@ -354,12 +347,8 @@ class RobotPlayer:
         if n_covers and len(coordinates) != n_covers:
             print("ERROR")
         return coordinates
-    
-     
-     
-    # Not used
+
     def _fill_neighbours_with_flags(self, row, col, player_map):
-        # TODO: check if 
         for r in range(row-1, row+2):
             for c in range(col-1, col+2):
                 if ([r, c] != [row, col]) and (0 <= r < player_map.shape[0]) and (0 <= c < player_map.shape[1]):
