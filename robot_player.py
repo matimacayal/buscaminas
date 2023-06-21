@@ -13,16 +13,20 @@ class RobotPlayer:
     
     PRESS = 1
     PLANT_FLAG = 2
-    
-    def __init__(self):
+        
+    def __init__(self, total_mines: int = 200):
         ...
         self.game = None
         self.last_move_result = 1 # initial state
         self.last_move = ""
         self.next_moves = []
+        self.mines_total = total_mines
     
     def __repr__(self):
         return f"Item()"
+    
+    def set_mines_total(self, total_mines):
+        self.mines_total = total_mines
     
     def start_game():
         # gui_interface = GameInterface.GUI()
@@ -64,7 +68,7 @@ class RobotPlayer:
         """
         self.next_moves = []
         
-        move_algorithm = self._decide_next_logic(player_map, mines_to_find)
+        move_algorithm = self._decide_next_logic(player_map)
         if move_algorithm == self.AI1_KEY:
             self.last_move_result = self.ai1_count_press_and_flag(player_map)
         elif move_algorithm == self.AI2_KEY:
@@ -76,7 +80,7 @@ class RobotPlayer:
         
         return self.next_moves
 
-    def _decide_next_logic(self, player_map, mines_to_find):
+    def _decide_next_logic(self, player_map):
         # TODO: vamos a asumir por ahora que el robot corre todo el juego de corrido,
         #       el jugador no hace jugadas entremedio y el robot otras, no es un asistente
         #       por ahora. Ojo que si puede partir desde la mitad de un juego.
@@ -140,11 +144,13 @@ class RobotPlayer:
     
     def press_random_cell(self, player_map, mines_to_find):
         flags_count = np.count_nonzero(player_map == FLAG_CELL_CHAR)
-        mines_total = flags_count + mines_to_find # TODO: esto asume que todas las banderas están bien puestas
-        
+        # TODO: esto asume que todas las banderas están bien puestas
+        # TODO: el núm. total de minas está hardcodeado por ahora
+        mines_to_find = self.mines_total - flags_count
+        # mines_total = flags_count + mines_to_find
         cell_row, cell_col = [0,0]
         
-        if flags_count < mines_total * 0.01:
+        if flags_count < self.mines_total * 0.01:
             # to little flags, just random
             print("just random")
             height, width = player_map.shape

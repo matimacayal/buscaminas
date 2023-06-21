@@ -8,6 +8,10 @@ import time
 
 np.set_printoptions(linewidth=200)
 
+COVERED_CELL_CHAR = "."
+FLAG_CELL_CHAR = "●"
+MINE_CELL_CHAR = "*"
+
 # color in cv2
 # color     = np.array([ B , G , R ])
 WHITE       = np.array([255,255,254])
@@ -32,7 +36,6 @@ COLORS = {
     'burgundy': BURGUNDY,
     'cyan': CYAN,
     'black': BLACK,
-    
 }
 NUMBERS = {
     'gray': "0",
@@ -43,11 +46,9 @@ NUMBERS = {
     'light_purple': "4",
     'burgundy': "5",
     'cyan': "6",
-    'black': '7'
+    'black': '7',
+    'mine_black': MINE_CELL_CHAR
 }
-COVERED_CELL_CHAR = "."
-FLAG_CELL_CHAR = "●"
-MINE_CELL_CHAR = "*"
 
 def _get_grid_corners(img_rgb):
     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
@@ -89,13 +90,14 @@ def get_map_details(img: cv2.Mat) -> dict:
     return map_details
     
 
-def minesweeper_ocr(img_rgb: cv2.Mat) -> np.ndarray:
+def minesweeper_ocr(img_rgb: cv2.Mat, mines_total: int) -> np.ndarray:
     top_left_corner, bottom_right_corner = _get_grid_corners(img_rgb)
     if not top_left_corner.any() or not bottom_right_corner.any():
         return None
     
     cols, rows = (bottom_right_corner - top_left_corner) // 20
     player_map = np.empty([rows, cols], dtype=str)
+    game_finished = False
 
     # print("top_left_corner", top_left_corner)
     # print("bottom_right_corner", bottom_right_corner)
@@ -134,6 +136,14 @@ def minesweeper_ocr(img_rgb: cv2.Mat) -> np.ndarray:
                 matched_colors = []
                 for color_name, color_value in COLORS.items():
                     if np.allclose(pixel_11_14, color_value, atol=tolerance):
+                        if color_name == "black":
+                            # cell could be 7 or MINE
+                            x, y = cell_pixel + np.array([8,8])
+                            pixel_8_8 = img_rgb[y][x]
+                            if np.allclose(pixel_8_8, WHITE, atol=tolerance):
+                                matched_colors.append("mine_black")
+                                # game_finished = True
+                                continue
                         matched_colors.append(color_name)
                             
                 if len(matched_colors) != 1:
@@ -144,9 +154,15 @@ def minesweeper_ocr(img_rgb: cv2.Mat) -> np.ndarray:
                 player_map[row, col] = number
                 # print(f"cell [{row},{col}] Uncovered. Pixel ({x}, {y}) #{number} color  {matched_colors} {pixel_11_14}.")
     
-    return player_map
+    if (np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0
+        or MINE_CELL_CHAR in player_map
+        or np.count_nonzero(player_map == FLAG_CELL_CHAR) != mines_total):
+        game_finished = True
+    
+    return player_map, game_finished  # , mines_left
 
-def image_to_arr(self, image) -> np.ndarray:
+# def image_to_arr(self, image) -> np.ndarray:
+def img_to_array(self, image) -> np.ndarray:
         img_rgb = np.array(image) 
         # Convert RGB to BGR 
         img_rgb = img_rgb[:, :, ::-1].copy()
