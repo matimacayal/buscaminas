@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-import windows_ui as wui
+import game_interface as game_interface
 import time
 
 # TODO: refactor - poner los tipos de las variables de entrada y salida de las funciones
@@ -72,7 +72,24 @@ def _get_grid_corners(img_rgb):
     
     return top_left_corner, bottom_right_corner
 
-def minesweeper_ocr(img_rgb: cv2.Mat):
+def get_map_details(img: cv2.Mat) -> dict:
+    img_rgb = minesweeper_ocr(img)
+    top_left_corner, bottom_right_corner = _get_grid_corners(img_rgb)
+    if not top_left_corner.any() or not bottom_right_corner.any():
+        return None
+    
+    cols, rows = (bottom_right_corner - top_left_corner) // 20
+    
+    map_details = {
+        "top_left_corner": top_left_corner,
+        "bottom_right_corner": bottom_right_corner,
+        "rows": rows,
+        "cols": cols
+    }
+    return map_details
+    
+
+def minesweeper_ocr(img_rgb: cv2.Mat) -> np.ndarray:
     top_left_corner, bottom_right_corner = _get_grid_corners(img_rgb)
     if not top_left_corner.any() or not bottom_right_corner.any():
         return None
@@ -129,6 +146,12 @@ def minesweeper_ocr(img_rgb: cv2.Mat):
     
     return player_map
 
+def image_to_arr(self, image) -> np.ndarray:
+        img_rgb = np.array(image) 
+        # Convert RGB to BGR 
+        img_rgb = img_rgb[:, :, ::-1].copy()
+        return img_rgb
+
 def get_screenshot(window_title: str = "") -> cv2.Mat:
     # TODO: avisar en caso que ventana del minesweeper no esté abierta
     img_rgb = None
@@ -136,7 +159,7 @@ def get_screenshot(window_title: str = "") -> cv2.Mat:
         img_rgb = cv2.imread('./images/minesweeper_24x30_soclose.png')
         # img_rgb = cv2.imread('./images/2023-06-12 (4).png')
     else:
-        image = wui.take_screenshot(window_title)
+        image = game_interface.take_screenshot(window_title)
         img_rgb = np.array(image) 
         # Convert RGB to BGR 
         img_rgb = img_rgb[:, :, ::-1].copy()
