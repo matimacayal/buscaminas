@@ -13,12 +13,10 @@ class RobotPlayer:
     
     PRESS = 1
     PLANT_FLAG = 2
-    PRESS_NEIGHBOUR_CELLS = 3
-    FILL_NEIGHBOUR_WITH_FLAGS = 4
     
     def __init__(self):
         ...
-        self.game = ...
+        self.game = None
         self.last_move_result = 1 # initial state
         self.last_move = ""
         self.next_moves = []
@@ -40,6 +38,44 @@ class RobotPlayer:
         #     gui_interface.execute(next_move)
         ...
     
+    def determine_next_moves(self, player_map: np.ndarray, mines_to_find: int) -> list:
+        """
+        Determines the next moves to be taken by the robot player based on the current game state.
+
+        Args:
+            player_map (np.ndarray): The grid of cells representing the current state of the game.
+            mines_to_find (int): The number of mines yet to be found.
+
+        Returns:
+            list: A list of next moves to be taken.
+
+        Raises:
+            None
+
+        This function analyzes the player_map and mines_to_find to decide the next moves for the robot player.
+        It considers the current game state, previous moves, and certain conditions to determine the appropriate move
+        algorithm to use. The result of the chosen move algorithm is stored in the last_move_result attribute,
+        and the list of next moves is stored in the next_moves attribute.
+
+        Note:
+            This function assumes that the robot player runs the entire game continuously, without any human player
+            input or interruptions between moves.
+
+        """
+        self.next_moves = []
+        
+        move_algorithm = self._decide_next_logic(player_map, mines_to_find)
+        if move_algorithm == self.AI1_KEY:
+            self.last_move_result = self.ai1_count_press_and_flag(player_map)
+        elif move_algorithm == self.AI2_KEY:
+            self.last_move_result = self.ai2_2nd_level_counting(player_map)
+        elif move_algorithm == self.RANDOM_KEY:
+            self.last_move_result = self.press_random_cell(player_map, mines_to_find)
+        else:
+            print("INVALID move_algorithm KEY")
+        
+        return self.next_moves
+
     def _decide_next_logic(self, player_map, mines_to_find):
         # TODO: vamos a asumir por ahora que el robot corre todo el juego de corrido,
         #       el jugador no hace jugadas entremedio y el robot otras, no es un asistente
@@ -64,21 +100,6 @@ class RobotPlayer:
             
         print(f"next move: {next_move}")
         return next_move
-    
-    def determine_next_moves(self, player_map, mines_to_find):
-        self.next_moves = []
-        
-        move_algorithm = self._decide_next_logic(player_map, mines_to_find)
-        if move_algorithm == self.AI1_KEY:
-            self.last_move_result = self.ai1_count_press_and_flag(player_map)
-        elif move_algorithm == self.AI2_KEY:
-            self.last_move_result = self.ai2_2nd_level_counting(player_map)
-        elif move_algorithm == self.RANDOM_KEY:
-            self.last_move_result = self.press_random_cell(player_map, mines_to_find)
-        else:
-            print("INVALID move_algorithm KEY")
-        
-        return self.next_moves
     
     def ai1_count_press_and_flag(self, player_map):
         # before_covers_n = np.count_nonzero(player_map == COVERED_CELL_CHAR)
@@ -106,7 +127,6 @@ class RobotPlayer:
             elif flags < cell_value:
                 if covers == cell_value - flags:
                     # put flag in neighbour covers
-                    # self.next_moves.append({'movement': self.FILL_NEIGHBOUR_WITH_FLAGS, 'row_col': [1,2]})
                     self._fill_neighbours_with_flags(row, col, player_map)
                 elif covers < cell_value - flags:
                     print("ERROR: number bigger than neighbouring cells, this should not happen")
