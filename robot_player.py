@@ -11,16 +11,15 @@ class RobotPlayer:
     EXIT_KEY = "exit"
     FLAG_KEY = "f"
     
-    PRESS = 1
-    PLANT_FLAG = 2
+    PRESS = "PRESS"
+    PLANT_FLAG = "PLANT_FLAG"
         
-    def __init__(self, total_mines: int = 200):
-        ...
+    def __init__(self, mines_total: int):
         self.game = None
         self.last_move_result = 1 # initial state
         self.last_move = ""
         self.next_moves = []
-        self.mines_total = total_mines
+        self.mines_total = mines_total
     
     def __repr__(self):
         return f"Item()"
@@ -42,7 +41,7 @@ class RobotPlayer:
         #     gui_interface.execute(next_move)
         ...
     
-    def determine_next_moves(self, player_map: np.ndarray, mines_to_find: int) -> list:
+    def determine_next_moves(self, player_map: np.ndarray) -> list:
         """
         Determines the next moves to be taken by the robot player based on the current game state.
 
@@ -74,7 +73,7 @@ class RobotPlayer:
         elif move_algorithm == self.AI2_KEY:
             self.last_move_result = self.ai2_2nd_level_counting(player_map)
         elif move_algorithm == self.RANDOM_KEY:
-            self.last_move_result = self.press_random_cell(player_map, mines_to_find)
+            self.last_move_result = self.press_random_cell(player_map)
         else:
             print("INVALID move_algorithm KEY")
         
@@ -142,7 +141,7 @@ class RobotPlayer:
         print("move result =", move_result)
         return move_result
     
-    def press_random_cell(self, player_map, mines_to_find):
+    def press_random_cell(self, player_map):
         flags_count = np.count_nonzero(player_map == FLAG_CELL_CHAR)
         # TODO: esto asume que todas las banderas están bien puestas
         # TODO: el núm. total de minas está hardcodeado por ahora
