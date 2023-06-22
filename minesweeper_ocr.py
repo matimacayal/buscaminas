@@ -47,7 +47,7 @@ NUMBERS = {
     'burgundy': "5",
     'cyan': "6",
     'black': '7',
-    'mine_black': MINE_CELL_CHAR
+    'mine_black': MINE_CELL_CHAR # TODO: check well if doing this, or even if it needs to be done.
 }
 
 def _get_grid_corners(img_rgb):
@@ -157,6 +157,7 @@ def minesweeper_ocr(img_rgb: cv2.Mat, mines_total: int) -> np.ndarray:
     if (np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0
         or MINE_CELL_CHAR in player_map
         or np.count_nonzero(player_map == FLAG_CELL_CHAR) != mines_total):
+        print("game_finished = True")
         game_finished = True
     
     return player_map, game_finished  # , mines_left
