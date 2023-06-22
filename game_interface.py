@@ -13,8 +13,9 @@ class GameInterface():
         self.window_title = window_title
     
     def initialize(self):
+        print("Initialize GameInterface for", self.window_title)
         # get map info
-        img_array = mcr.image_to_nparray(self.take_screenshot())
+        img_array = mcr.img_to_array(self.take_screenshot())
         game_info = mcr.get_map_details(img_array)
         self.top_left_map_corner = game_info["top_left_corner"]
         self.bottom_right_map_corner = game_info["bottom_right_corner"]
@@ -25,7 +26,7 @@ class GameInterface():
               f"rows: {self.rows}"
               f"cols: {self.cols}")
     
-    def take_screenshot(self, display:bool = False) -> Image:
+    def take_screenshot(self, display:bool = False, as_rgb_array:bool = False):
         # Get the window's position and size
         window_info = pyautogui.getWindowsWithTitle(self.window_title)
         if len(window_info) == 0:
@@ -42,21 +43,10 @@ class GameInterface():
         if display:
             screenshot.show()
         
+        if as_rgb_array:
+            screenshot = mcr.img_to_array(screenshot)
+        
         return screenshot
-
-        # Replace 'Window Title' with the actual title of the window you want to capture
-        # display_window_screenshot('Minesweeper X')
-
-        # Convert the screenshot to grayscale
-        # grayscale_screenshot = screenshot.convert('L')
-        
-        # pil_image = Image.frombytes('RGB', screenshot.size, screenshot.tobytes())
-        # grayscale_image = screenshot.convert('L')
-
-        # # Convert the grayscale screenshot to a NumPy array
-        # grayscale_array = np.array(grayscale_image)
-        
-        # return grayscale_array
     
     def image_to_nparray(self, image: Image):
         img_rgb = np.array(image) 
@@ -64,7 +54,7 @@ class GameInterface():
         img_rgb = img_rgb[:, :, ::-1].copy()
         return img_rgb
 
-    def _click_window(self, window_title, x, y):
+    def _click_window(self, window_title: str, x: int, y: int, button: str='left'):
         window_info = pyautogui.getWindowsWithTitle(window_title)
         if len(window_info) == 0:
             print("Window not found.")
@@ -78,13 +68,16 @@ class GameInterface():
 
         pyautogui.click(absolute_x, absolute_y)
 
-    def click_cell(self, row, col):
+    def click_cell(self, row: int, col: int, button: str='left'):
         # grid_top = 127
         # grid_left = 16
         grid_left, grid_top = self.top_left_map_corner
         x = col * 20 + 10 + grid_left
         y = row * 20 + 10 + grid_top
-        self._click_window('Minesweeper X', x, y)
+        self._click_window('Minesweeper X', x, y, button)
+    
+    def righ_click_cell(self, row: int, col: int):
+        self.click_cell(row, col, button='right')
 
     def play_minesweeper(self):
         while 1:
@@ -103,6 +96,18 @@ class GameInterface():
         # click_window('Minesweeper X', 226, 175)
         # take_screenshot('Minesweeper X')
         self.play_minesweeper()
+    
+    def execute(self, movements: list):
+        print("movements:", movements)
+        for movement in movements:
+            row, col = movement["row_col"]
+            action = movement["movement"]
+            if action == "PRESS":
+                self.click_cell(row, col)
+            elif action == "PLANT_FLAG":
+                self.righ_click_cell(row, col)
+            else:
+                print("ERROR: invalid movement ->", action)
 
 # if __name__ == '__main__':
 #     main()
