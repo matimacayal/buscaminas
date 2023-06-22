@@ -19,11 +19,3 @@ while not won:
     game_interface.execute(next_moves)
 
 print("EOS")
-
-# TODO: WIP
-# [X] game_interface.finished_game
-# [X] get mines_left from screenshot and pass it to robot
-# [X] game_interface.execute()
-
-# TODO: refactor name of functions between mcr and game_interface to make clearer the types of img formats
-#       cv2.mat or Image (i'm almost sure cv2.mat is a np.ndarray)
