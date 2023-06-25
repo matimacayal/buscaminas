@@ -1,8 +1,11 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-import game_interface as game_interface
+# from game_interface import GameInterface
 import time
+import pyautogui
+from pathlib import Path
+import re
 
 # TODO: refactor - poner los tipos de las variables de entrada y salida de las funciones
 
@@ -66,15 +69,16 @@ def _get_grid_corners(img_rgb):
     template_bottom_right_coord = np.concatenate(loc)[::-1]
     
     if template_bottom_right_coord.size == 0 or template_top_left_coord.size == 0:
+        print("BREAKING: templates not found")
         return None, None
 
     top_left_corner = template_top_left_coord + np.array([9,17])
-    bottom_right_corner = template_bottom_right_coord - np.array([1,1])
+    bottom_right_corner = template_bottom_right_coord - np.array([4,1])
     
     return top_left_corner, bottom_right_corner
 
 def get_map_details(img: cv2.Mat) -> dict:
-    img_rgb = minesweeper_ocr(img)
+    img_rgb = minesweeper_ocr(img)[0]
     top_left_corner, bottom_right_corner = _get_grid_corners(img_rgb)
     if not top_left_corner.any() or not bottom_right_corner.any():
         return None
@@ -88,12 +92,47 @@ def get_map_details(img: cv2.Mat) -> dict:
         "cols": cols
     }
     return map_details
+
+def increment_last_number(filename):
+    regex = re.compile(r'(\d+)(?!.*\d)')  # Matches the last number in the filename
+    match = regex.search(filename)
+    
+    if match:
+        number = int(match.group(0))  # Extract the last number
+        new_number = number + 1
+        new_filename = regex.sub(str(new_number), filename, count=1)
+        return new_filename
+    
+    return None
+
+def save_image(image, filename):
+    path = Path(filename)
+    
+    while path.exists():
+        new_filename = increment_last_number(path.stem)
+        
+        if new_filename is not None:
+            new_filename += path.suffix
+            path = path.with_name(new_filename)
+        else:
+            path = path.with_name(path.stem + "_2" + path.suffix)
+    
+    path.parent.mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(str(path), image)
+    print(f"Image saved as {path}")
     
 
-def minesweeper_ocr(img_rgb: cv2.Mat, mines_total: int) -> np.ndarray:
+def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = -1, debug:bool = False) -> np.ndarray:
+    # cv2.imshow('debug_image_before',img_rgb)
+    # cv2.waitKey(0)
+    
+    ocr_error = False
+    
     top_left_corner, bottom_right_corner = _get_grid_corners(img_rgb)
     if not top_left_corner.any() or not bottom_right_corner.any():
         return None
+    
+    print(f'top corner {top_left_corner}, bottom corner{bottom_right_corner}')
     
     cols, rows = (bottom_right_corner - top_left_corner) // 20
     player_map = np.empty([rows, cols], dtype=str)
@@ -103,7 +142,7 @@ def minesweeper_ocr(img_rgb: cv2.Mat, mines_total: int) -> np.ndarray:
     # print("bottom_right_corner", bottom_right_corner)
     # print("grid_size", cols, rows)
 
-    white_tolerance = 10
+    white_tolerance = 20
     tolerance = 3
 
     for row in range(rows):
@@ -117,6 +156,7 @@ def minesweeper_ocr(img_rgb: cv2.Mat, mines_total: int) -> np.ndarray:
             
             if np.allclose(pixel_0_1, WHITE, atol=white_tolerance):
                 # print(f"cell [{row},{col}] top left pixel ({cell_pixel}). Pixel ({x}, {y}) color  {pixel_0_1}. Covered.")
+                img_rgb[y,x] = [255,0,0]
                 x9, y6 = cell_pixel + np.array([9,6])
                 _, y14 = cell_pixel + np.array([9,14])
                 pixel_9_6 = img_rgb[y6][x9]
@@ -127,11 +167,12 @@ def minesweeper_ocr(img_rgb: cv2.Mat, mines_total: int) -> np.ndarray:
                     player_map[row, col] = COVERED_CELL_CHAR
                     # print(f"cell [{row},{col}] Covered. Pixel colors ({x9},{y6}) {pixel_9_6} ({x9},{y14}) {pixel_9_14}.")
                 else:
-                    print("ERROR: no cell match for colors")
+                    print(f'OCR failed [{row},{col}]. No color match for pixels 9,6({x9},{y6}){pixel_9_6} 9,14({x9},{y14}){pixel_9_14}')
             elif np.allclose(pixel_0_1, DARK_GRAY, atol=tolerance):
                 # print(f"cell [{row},{col}] top left pixel ({cell_pixel}). Pixel ({x}, {y}) color  {pixel_0_1}. Uncovered.")
+                img_rgb[y,x] = [0,0,255]
                 x, y = cell_pixel + np.array([11,14])
-                pixel_11_14 = img_rgb[y][x]            
+                pixel_11_14 = img_rgb[y][x]
                 
                 matched_colors = []
                 for color_name, color_value in COLORS.items():
@@ -144,8 +185,12 @@ def minesweeper_ocr(img_rgb: cv2.Mat, mines_total: int) -> np.ndarray:
                                 matched_colors.append("mine_black")
                                 # game_finished = True
                                 continue
+                            else:
+                                print(f'OCR failed [{row},{col}]. No color match for pixels 8,8({x},{y}){pixel_8_8}')
                         matched_colors.append(color_name)
-                            
+                if matched_colors == []:
+                    print(f'OCR failed [{row},{col}]. No color match for pixels 11,14({x},{y}){pixel_11_14}')
+                    
                 if len(matched_colors) != 1:
                     print(f"ERROR: more than one color detected. Cell [{row},{col}] Pixel ({x},{y}) colors {matched_colors}")
                     return None
@@ -153,52 +198,98 @@ def minesweeper_ocr(img_rgb: cv2.Mat, mines_total: int) -> np.ndarray:
                 number = NUMBERS[matched_colors[0]]
                 player_map[row, col] = number
                 # print(f"cell [{row},{col}] Uncovered. Pixel ({x}, {y}) #{number} color  {matched_colors} {pixel_11_14}.")
+            else:
+                print(f'OCR failed [{row},{col}]. No color match in pixel 0,1({x},{y}){pixel_0_1}')
+                        
+            if player_map[row, col] == '':
+                ocr_error = True
+                print(f'OCR failed. Empty cell [{row},{col}]')
+                
     
-    if (np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0
+    # cv2.imshow('debug_image_after',img_rgb)
+    # cv2.waitKey(0)
+    if ocr_error:
+        print("OCR ERROR -> TRUE")
+        save_image(img_rgb, 'images/ocr_tests/ocr_error_image.png')
+        # cv2.imwrite('images/debug_image_after.png',img_rgb)
+    else:
+        print("OCR SUCCES")
+        save_image(img_rgb, 'images/ocr_tests/ocr_success_image.png')
+    
+    if (mines_total != -1 
+        or np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0
         or MINE_CELL_CHAR in player_map
         or np.count_nonzero(player_map == FLAG_CELL_CHAR) != mines_total):
         print("game_finished = True")
         game_finished = True
     
-    return player_map, game_finished  # , mines_left
+    print(f"player_map: [shape {player_map.shape}] \n", player_map)
+    
+    return player_map, game_finished  # TODO: move game_finished variable to other part to have clean function
+
+def debug_mcr():
+    minesweeper_ocr(debug=True)
 
 # def image_to_arr(self, image) -> np.ndarray:
-def img_to_array(self, image) -> np.ndarray:
+def img_to_array(image) -> np.ndarray:
         img_rgb = np.array(image) 
         # Convert RGB to BGR 
         img_rgb = img_rgb[:, :, ::-1].copy()
         return img_rgb
 
-def get_screenshot(window_title: str = "") -> cv2.Mat:
-    # TODO: avisar en caso que ventana del minesweeper no esté abierta
-    img_rgb = None
-    if not window_title:
-        img_rgb = cv2.imread('./images/minesweeper_24x30_soclose.png')
-        # img_rgb = cv2.imread('./images/2023-06-12 (4).png')
-    else:
-        image = game_interface.take_screenshot(window_title)
-        img_rgb = np.array(image) 
-        # Convert RGB to BGR 
-        img_rgb = img_rgb[:, :, ::-1].copy()
-    return img_rgb
-
 def display_array(arr):
+    # TODO: implementar que avise si hay celdas no validas o vacías
     print(np.array2string(arr, separator=' ', formatter={'str_kind': lambda x: x}))
 
-def main():
-    start_time = time.time()
-    game_image = get_screenshot("Minesweeper X")
-    if not game_image.any():
-        print("Window not found")
-        return
+def save_minesweeper_screenshot():
+    window = pyautogui.getWindowsWithTitle("Minesweeper X")[0]
+    screenshot = pyautogui.screenshot(region=(window.left, window.top, window.width, window.height))
+    screenshot.save('images/screenshot.png')
+
+def get_minesweeper_screenshot():
+    window = pyautogui.getWindowsWithTitle("Minesweeper X")[0]
+    screenshot = pyautogui.screenshot(region=(window.left, window.top, window.width, window.height))
+    img_rgb = np.array(screenshot) 
+    img_rgb = img_rgb[:, :, ::-1].copy()
+    return img_rgb
+
+def find_image_in_image(
+    # img_url_1:str = 'images/minesweeper_map_top_left_corner.png',
+    img_url_1:str = 'images/minesweeper_map_bottom_right_corner.png',
+    img_url_2 = 'images/screenshot.png'  # 'images/minesweeper_24x30_soclose.png'
+    ):
+    if type(img_url_2) is str:
+        img_url_2 = cv2.imread(img_url_2)
+    img_rgb = img_url_2.copy()
+    img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+    template = cv2.imread(img_url_1,0)
+    w, h = template.shape[::-1]
+
+    res = cv2.matchTemplate(img_gray,template,cv2.TM_CCOEFF_NORMED)
+    threshold = 0.95
+    loc = np.where( res >= threshold)
+    for pt in zip(*loc[::-1]):
+        print(f"image found in pixel: {pt}")
+        cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
+
+    # cv2.imwrite('res.png',img_rgb)
+    cv2.imshow('result', img_rgb)
+    cv2.waitKey(0)
+
     
-    player_map = minesweeper_ocr(game_image)
-    if player_map is None:
-        print("couldn't get ocr")
-        return
+# def main():
+#     start_time = time.time()
+#     # game_interface = GameInterface(window_title="Minesweeper X")
+#     screenshot = game_interface.take_screenshot(display=True)
+#     game_image = img_to_array(screenshot)
+#     player_map = minesweeper_ocr(game_image)[0]
+#     if player_map is None:
+#         print("couldn't get ocr")
+#         return
     
-    display_array(player_map)
-    print(f"took {time.time() - start_time} s")
+#     display_array(player_map)
+#     print(f"took {time.time() - start_time} s")
+    
         
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
