@@ -122,7 +122,7 @@ def save_image(image, filename):
     print(f"Image saved as {path}")
     
 
-def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = -1, debug:bool = False) -> np.ndarray:
+def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = 0, debug:bool = False) -> np.ndarray:
     # cv2.imshow('debug_image_before',img_rgb)
     # cv2.waitKey(0)
     
@@ -205,23 +205,26 @@ def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = -1, debug:bool = False) -
     
     print(f"player_map: [shape {player_map.shape}] \n", player_map)
     
+    if mines_total <= 0:
+        print(f"WARNING: mines_total = {mines_total}")
     print(f'top corner {top_left_corner}, bottom corner{bottom_right_corner}')
     print(f'player_map.shape = {rows, cols}')
     
     # cv2.imshow('debug_image_after',img_rgb)
     # cv2.waitKey(0)
+    
     if ocr_error:
         print("OCR ERROR -> TRUE")
         save_image(img_rgb, 'images/ocr_tests/ocr_error_image.png')
         # cv2.imwrite('images/debug_image_after.png',img_rgb)
     else:
-        print("OCR SUCCES")
+        print("OCR witho No Errors")
         save_image(img_rgb, 'images/ocr_tests/ocr_success_image.png')
     
-    if (mines_total != -1 
-        or np.count_nonzero(player_map == COVERED_CELL_CHAR) != 0
-        or MINE_CELL_CHAR in player_map
-        or np.count_nonzero(player_map == FLAG_CELL_CHAR) != mines_total):
+    if (mines_total != 0
+        and np.count_nonzero(player_map == COVERED_CELL_CHAR) == 0
+        and MINE_CELL_CHAR not in player_map
+        and np.count_nonzero(player_map == FLAG_CELL_CHAR) == mines_total):
         print("game_finished = True")
         game_finished = True
         

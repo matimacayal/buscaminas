@@ -28,7 +28,7 @@ def test_ocr():
     screenshot = game_interface.take_screenshot(display=False)
     screenshot.save('images/screenshot.png')
     game_image = mcr.img_to_array(screenshot)
-    player_map = mcr.minesweeper_ocr(game_image)[0]
+    player_map = mcr.minesweeper_ocr(game_image, mines_total=40)[0]
     if player_map is None:
         print("couldn't get ocr")
         return
