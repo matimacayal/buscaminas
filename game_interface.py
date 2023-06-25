@@ -15,7 +15,7 @@ class GameInterface():
     def initialize(self):
         print("Initialize GameInterface for", self.window_title)
         # get map info
-        img_array = mcr.img_to_array(self.take_screenshot())
+        img_array = mcr.img_to_array(image=self.take_screenshot(display=True))
         game_info = mcr.get_map_details(img_array)
         self.top_left_map_corner = game_info["top_left_corner"]
         self.bottom_right_map_corner = game_info["bottom_right_corner"]
