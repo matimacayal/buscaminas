@@ -73,7 +73,7 @@ def _get_grid_corners(img_rgb):
         return None, None
 
     top_left_corner = template_top_left_coord + np.array([9,17])
-    bottom_right_corner = template_bottom_right_coord - np.array([4,1])
+    bottom_right_corner = template_bottom_right_coord - np.array([1,1])
     
     return top_left_corner, bottom_right_corner
 
@@ -131,9 +131,7 @@ def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = -1, debug:bool = False) -
     top_left_corner, bottom_right_corner = _get_grid_corners(img_rgb)
     if not top_left_corner.any() or not bottom_right_corner.any():
         return None
-    
-    print(f'top corner {top_left_corner}, bottom corner{bottom_right_corner}')
-    
+        
     cols, rows = (bottom_right_corner - top_left_corner) // 20
     player_map = np.empty([rows, cols], dtype=str)
     game_finished = False
@@ -204,7 +202,11 @@ def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = -1, debug:bool = False) -
             if player_map[row, col] == '':
                 ocr_error = True
                 print(f'OCR failed. Empty cell [{row},{col}]')
-                
+    
+    print(f"player_map: [shape {player_map.shape}] \n", player_map)
+    
+    print(f'top corner {top_left_corner}, bottom corner{bottom_right_corner}')
+    print(f'player_map.shape = {rows, cols}')
     
     # cv2.imshow('debug_image_after',img_rgb)
     # cv2.waitKey(0)
@@ -222,9 +224,7 @@ def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = -1, debug:bool = False) -
         or np.count_nonzero(player_map == FLAG_CELL_CHAR) != mines_total):
         print("game_finished = True")
         game_finished = True
-    
-    print(f"player_map: [shape {player_map.shape}] \n", player_map)
-    
+        
     return player_map, game_finished  # TODO: move game_finished variable to other part to have clean function
 
 def debug_mcr():
