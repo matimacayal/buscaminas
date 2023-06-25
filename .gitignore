@@ -1,5 +1,7 @@
 # Testing
 images/result*
+images/ocr_tests*
+images/screenshot*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
