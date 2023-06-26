@@ -4,14 +4,15 @@ from robot_player import RobotPlayer
 import time
 
 def main():
+    TOTAL_MINES = 99
     game_interface = GameInterface(window_title="Minesweeper X")
     game_interface.initialize()
-    robot_player = RobotPlayer(mines_total=200)
+    robot_player = RobotPlayer(mines_total=TOTAL_MINES)
     mines_total = robot_player.mines_total
     won = False
     while not won:
         # input("enter to continue:")
-        time.sleep(2)
+        # time.sleep(0.1)
         img_rgb = game_interface.take_screenshot(display=False, as_rgb_array=True)
         player_map, mines_found, game_finished = mcr.minesweeper_ocr(img_rgb, mines_total)
         if game_finished:
