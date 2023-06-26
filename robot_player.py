@@ -154,13 +154,13 @@ class RobotPlayer:
         # mines_total = flags_count + mines_to_find
         cell_row, cell_col = [0,0]
         
-        if flags_count > 0:  # < self.mines_total * 0.01:
+        if flags_count < self.mines_total * 0.01:
             # to little flags, just random
             print("just random")
             height, width = player_map.shape
             cell_row, cell_col = self._random_duple(height-1, width-1)
             
-            print(f"random: [{cell_row}, {cell_col}]")
+            # print(f"random: [{cell_row}, {cell_col}]")
             self.next_moves.append({"movement":self.PRESS, "row_col": [cell_row, cell_col]})
             return 1
         
