@@ -2,6 +2,7 @@ import pyautogui
 import numpy as np
 from PIL import Image
 import minesweeper_ocr as mcr
+import time
 
 class GameInterface():
     
@@ -11,20 +12,23 @@ class GameInterface():
         self.rows = None
         self.cols = None
         self.window_title = window_title
+        self.happy_face_center = None
     
     def initialize(self):
         print("Initialize GameInterface for", self.window_title)
         # get map info
-        img_array = mcr.img_to_array(image=self.take_screenshot(display=True))
-        game_info = mcr.get_map_details(img_array)
+        img_array = mcr.img_to_array(image=self.take_screenshot(display=False))
+        game_info = mcr.get_map_metadata(img_array)
         self.top_left_map_corner = game_info["top_left_corner"]
         self.bottom_right_map_corner = game_info["bottom_right_corner"]
         self.rows = game_info["rows"]
         self.cols = game_info["cols"]
-        print(f"top_left: {self.top_left_map_corner}"
-              f"bottom_right: {self.bottom_right_map_corner}"
-              f"rows: {self.rows}"
-              f"cols: {self.cols}")
+        self.happy_face_center = game_info["happy_face_center"]
+        print(f"top_left: {self.top_left_map_corner}\n"
+              f"bottom_right: {self.bottom_right_map_corner}\n"
+              f"rows: {self.rows}\n"
+              f"cols: {self.cols}\n"
+              f"happy_face: {self.happy_face_center}")
     
     def take_screenshot(self, display:bool = False, as_rgb_array:bool = False):
         # Get the window's position and size
@@ -108,6 +112,12 @@ class GameInterface():
                 self.righ_click_cell(row, col)
             else:
                 print("ERROR: invalid movement ->", action)
+    
+    def restart_game(self):
+        x, y = self.happy_face_center
+        self._click_window('Minesweeper X', x, y)
+        time.sleep(0.1)
+        self._click_window('Minesweeper X', x, y)
 
 # if __name__ == '__main__':
 #     main()

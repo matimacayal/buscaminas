@@ -10,15 +10,19 @@ def main():
     mines_total = robot_player.mines_total
     won = False
     while not won:
-        input("enter to continue:")
-        img_rgb = game_interface.take_screenshot(display=True, as_rgb_array=True)
-        player_map, finished_game = mcr.minesweeper_ocr(img_rgb, mines_total)
-        if finished_game: # WIP
+        # input("enter to continue:")
+        time.sleep(2)
+        img_rgb = game_interface.take_screenshot(display=False, as_rgb_array=True)
+        player_map, mines_found, game_finished = mcr.minesweeper_ocr(img_rgb, mines_total)
+        if game_finished:
             won = True
             print("Won 😁")
             break
-        next_moves = robot_player.determine_next_moves(player_map) 
-        game_interface.execute(next_moves)
+        if not mines_found:
+            next_moves = robot_player.determine_next_moves(player_map) 
+            game_interface.execute(next_moves)
+        else:
+            game_interface.restart_game()
 
     print("EOS")
 
@@ -37,5 +41,5 @@ def test_ocr():
     print(f"took {time.time() - start_time} s")
 
 if __name__ == '__main__':
-    # main()
-    test_ocr()
+    main()
+    # test_ocr()

@@ -54,6 +54,23 @@ NUMBERS = {
 }
 
 def _get_grid_corners(img_rgb):
+    """
+    returns the x,y pixel for the top and bottom corner of the player map
+
+    Args:
+        img_rgb (np.ndarray): imagen del screenshot en formato cv2 RGB
+
+    Returns:
+        [np.array([x1,y1]), np.array([x2,y2])]: list with top and bottom coordinates as np.ndarray
+    
+    Example:
+        img_rgb = mcr.get_minesweeper_screenshot()
+        cv2.imshow('debug_image_before',img_rgb)
+        cv2.waitKey(0)
+        mcr._get_grid_corners(img_rgb) 
+            ->(array([ 19, 127], dtype=int64), array([619, 607], dtype=int64))
+    
+    """
     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
     template_top_left_corner = cv2.imread( '.\images\minesweeper_map_top_left_corner.png',0)
     template_bottom_right_corner = cv2.imread( '.\images\minesweeper_map_bottom_right_corner.png',0)
@@ -77,9 +94,61 @@ def _get_grid_corners(img_rgb):
     
     return top_left_corner, bottom_right_corner
 
-def get_map_details(img: cv2.Mat) -> dict:
-    img_rgb = minesweeper_ocr(img)[0]
+def _get_happy_face_center(img_rgb):
+    img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+    template_happy_face = cv2.imread( '.\images\minesweeper_happy_face.png',0)
+
+    threshold = 0.95
+
+    res = cv2.matchTemplate(img_gray,template_happy_face,cv2.TM_CCOEFF_NORMED)
+    loc = np.where( res >= threshold)
+    happy_face_coord = np.concatenate(loc)[::-1]
+    
+    if happy_face_coord.size == 0:
+        print("BREAKING: templates not found")
+        return None
+
+    happy_face_center = happy_face_coord + np.array([16,16]) # happy face is 34x34 pixels
+    
+    return happy_face_center
+
+def get_map_metadata(img_rgb: cv2.Mat) -> dict:
+    """
+    From a cv2 RGB screenshot of the Minesweeper window get the position of
+    the top and bottom corners, the number of rows and columns of the mine map
+    and the position of the restart (happy face) button.
+
+    Args:
+        img_rgb (cv2.Mat): Minesweeper screenshot as cv2 RGB np.ndarray
+
+    Returns:
+        dict: A dictionary containing metadata about the game grid.
+
+            The dictionary has the following structure:
+
+            {
+                "top_left_corner": np.ndarray,
+                "bottom_right_corner": np.ndarray,
+                "rows": int,
+                "cols": int,
+                "happy_face_center": np.ndarray
+            }
+    
+    Note:
+        This function assumes that the game grid and the happy face are visible and properly aligned
+        in the input image. It uses image processing techniques to locate the corners and center
+        of the game grid.
+
+    Example:
+        img = cv2.imread('game_image.png')
+        metadata = get_map_metadata(img)
+        # Access individual metadata values
+        top_left_corner = metadata['top_left_corner']
+        rows = metadata['rows']
+        # Use the metadata for further processing
+    """
     top_left_corner, bottom_right_corner = _get_grid_corners(img_rgb)
+    happy_face_center = _get_happy_face_center(img_rgb)
     if not top_left_corner.any() or not bottom_right_corner.any():
         return None
     
@@ -89,7 +158,8 @@ def get_map_details(img: cv2.Mat) -> dict:
         "top_left_corner": top_left_corner,
         "bottom_right_corner": bottom_right_corner,
         "rows": rows,
-        "cols": cols
+        "cols": cols,
+        "happy_face_center": happy_face_center
     }
     return map_details
 
@@ -122,11 +192,40 @@ def save_image(image, filename):
     print(f"Image saved as {path}")
     
 
-def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = 0, debug:bool = False) -> np.ndarray:
+def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = 0) -> np.ndarray:
+    """
+    Receives 'Minesweeper X' window screenshot as cv2 RGB and return and
+    returns the player map as a rows,cols np.ndarray that the ai can use
+
+    Args:
+        img_rgb (cv2.Mat): Minesweeper screenshot as cv2 RGB np.ndarray 
+        mines_total (int, optional): The total number of mines in the game.
+            Used to count total flags and determine if game has enden.
+            Defaults to 0.
+
+    Returns:
+        np.ndarray: if all goes well returns the player map as an np array
+    
+    Note:
+        This function assumes that the game grid is visible and properly aligned in the input image.
+        It relies on specific pixel colors to identify covered, uncovered, flagged, and mine cells.
+
+    Performs OCR on the input image to extract information about the game grid cells.
+    It analyzes the colors of pixels in specific locations to determine the state of each cell.
+    The identified cells are stored in a numpy array and returned as the output.
+    The function also checks for OCR errors and game completion status.
+    
+    Example:
+        img = cv2.imread('game_image.png')
+        result = minesweeper_ocr(img, mines_total=20)
+        # Perform further processing on the result
+    
+    """
     # cv2.imshow('debug_image_before',img_rgb)
     # cv2.waitKey(0)
     
     ocr_error = False
+    found_mines = False
     
     top_left_corner, bottom_right_corner = _get_grid_corners(img_rgb)
     if not top_left_corner.any() or not bottom_right_corner.any():
@@ -180,8 +279,8 @@ def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = 0, debug:bool = False) ->
                             x, y = cell_pixel + np.array([8,8])
                             pixel_8_8 = img_rgb[y][x]
                             if np.allclose(pixel_8_8, WHITE, atol=tolerance):
+                                found_mines = True
                                 matched_colors.append("mine_black")
-                                # game_finished = True
                                 continue
                             else:
                                 print(f'OCR failed [{row},{col}]. No color match for pixels 8,8({x},{y}){pixel_8_8}')
@@ -203,7 +302,7 @@ def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = 0, debug:bool = False) ->
                 ocr_error = True
                 print(f'OCR failed. Empty cell [{row},{col}]')
     
-    print(f"player_map: [shape {player_map.shape}] \n", player_map)
+    print(f"player_map:\n", player_map)
     
     if mines_total <= 0:
         print(f"WARNING: mines_total = {mines_total}")
@@ -228,7 +327,7 @@ def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = 0, debug:bool = False) ->
         print("game_finished = True")
         game_finished = True
         
-    return player_map, game_finished  # TODO: move game_finished variable to other part to have clean function
+    return player_map, found_mines, game_finished  # TODO: move game_finished variable to other part to have clean function
 
 def debug_mcr():
     minesweeper_ocr(debug=True)
@@ -250,6 +349,12 @@ def save_minesweeper_screenshot():
     screenshot.save('images/screenshot.png')
 
 def get_minesweeper_screenshot():
+    """
+    returns a screenshot of the 'Minesweeper X' window
+
+    Returns:
+        np.ndarray: imagen en formato cv2 RGB
+    """
     window = pyautogui.getWindowsWithTitle("Minesweeper X")[0]
     screenshot = pyautogui.screenshot(region=(window.left, window.top, window.width, window.height))
     img_rgb = np.array(screenshot) 
