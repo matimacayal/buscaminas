@@ -27,19 +27,21 @@ class RobotPlayer:
     def set_mines_total(self, total_mines):
         self.mines_total = total_mines
     
-    def start_game():
-        # gui_interface = GameInterface.GUI()
-        # robot_player = RobotPlayer()
-        # won = False
-        # while not won:
-        #     img = gui_interface.screenshot()
-        #     player_map = minesweeper_ocr.img_to_arr(img)
-        #     if finished_game(player_map):
-        #         won = True
-        #         break
-        #     next_move = robot_player.get_next_move(player_map) # eso quiero?
-        #     gui_interface.execute(next_move)
-        ...
+    def remove_duplicate_moves(self):
+        movements = self.next_moves
+        unique_movements = []
+        seen_movements = set()
+        
+        for movement in movements:
+            movement_tuple = (
+                movement['movement'],
+                tuple(movement['row_col'])
+            )
+            
+            if movement_tuple not in seen_movements:
+                seen_movements.add(movement_tuple)
+                unique_movements.append(movement)
+        return unique_movements
     
     def determine_next_moves(self, player_map: np.ndarray) -> list:
         """
@@ -77,6 +79,8 @@ class RobotPlayer:
         else:
             print("INVALID move_algorithm KEY")
         
+        self.next_moves = self.remove_duplicate_moves()
+        
         return self.next_moves
 
     def _decide_next_logic(self, player_map):
@@ -102,6 +106,7 @@ class RobotPlayer:
             print("ERROR: last_move_result < 0")
             
         print(f"next move: {next_move}")
+        self.last_move = next_move
         return next_move
     
     def ai1_count_press_and_flag(self, player_map):
@@ -149,7 +154,7 @@ class RobotPlayer:
         # mines_total = flags_count + mines_to_find
         cell_row, cell_col = [0,0]
         
-        if flags_count < self.mines_total * 0.01:
+        if flags_count > 0:  # < self.mines_total * 0.01:
             # to little flags, just random
             print("just random")
             height, width = player_map.shape
@@ -249,7 +254,7 @@ class RobotPlayer:
                     if ([r, c] != [row, col]) and (0 <= r < player_map.shape[0]) and (0 <= c < player_map.shape[1]):
                         cell = player_map[r, c]
                         if cell in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
-                            n_neighbour_flags, n_neighbour_covered = self.count_neighbour_flags_and_covers(r, c, player_map)
+                            n_neighbour_flags, n_neighbour_covered = self._count_neighbour_flags_and_covers(r, c, player_map)
                             neighbour_covers_pos = self._get_neighbour_covers_pos(r, c, player_map, n_neighbour_covered)
                             neighbour_missing_mines = int(cell) - n_neighbour_flags
                             
