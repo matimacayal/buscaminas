@@ -302,23 +302,23 @@ def minesweeper_ocr(img_rgb:cv2.Mat, mines_total:int = 0) -> np.ndarray:
                 ocr_error = True
                 print(f'OCR failed. Empty cell [{row},{col}]')
     
-    print(f"player_map:\n", player_map)
+    # print(f"player_map:\n", player_map)
     
     if mines_total <= 0:
         print(f"WARNING: mines_total = {mines_total}")
-    print(f'top corner {top_left_corner}, bottom corner{bottom_right_corner}')
-    print(f'player_map.shape = {rows, cols}')
+    # print(f'top corner {top_left_corner}, bottom corner{bottom_right_corner}')
+    # print(f'player_map.shape = {rows, cols}')
     
     # cv2.imshow('debug_image_after',img_rgb)
     # cv2.waitKey(0)
     
-    if ocr_error:
-        print("OCR ERROR -> TRUE")
-        save_image(img_rgb, 'images/ocr_tests/ocr_error_image.png')
-        # cv2.imwrite('images/debug_image_after.png',img_rgb)
-    else:
-        print("OCR witho No Errors")
-        save_image(img_rgb, 'images/ocr_tests/ocr_success_image.png')
+    # if ocr_error:
+    #     print("OCR ERROR -> TRUE")
+    #     save_image(img_rgb, 'images/ocr_tests/ocr_error_image.png')
+    #     # cv2.imwrite('images/debug_image_after.png',img_rgb)
+    # else:
+    #     print("OCR witho No Errors")
+    #     save_image(img_rgb, 'images/ocr_tests/ocr_success_image.png')
     
     if (mines_total != 0
         and np.count_nonzero(player_map == COVERED_CELL_CHAR) == 0
