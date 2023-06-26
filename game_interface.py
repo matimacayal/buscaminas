@@ -58,7 +58,7 @@ class GameInterface():
         img_rgb = img_rgb[:, :, ::-1].copy()
         return img_rgb
 
-    def _click_window(self, window_title: str, x: int, y: int, button: str='left'):
+    def _click_window(self, window_title:str, x:int, y:int, button:str = 'left'):
         window_info = pyautogui.getWindowsWithTitle(window_title)
         if len(window_info) == 0:
             print("Window not found.")
@@ -70,9 +70,9 @@ class GameInterface():
         absolute_x = window_left + x
         absolute_y = window_top + y
 
-        pyautogui.click(absolute_x, absolute_y)
+        pyautogui.click(absolute_x, absolute_y, button=button)
 
-    def click_cell(self, row: int, col: int, button: str='left'):
+    def click_cell(self, row:int, col:int, button:str = 'left'):
         # grid_top = 127
         # grid_left = 16
         grid_left, grid_top = self.top_left_map_corner
@@ -107,8 +107,10 @@ class GameInterface():
             row, col = movement["row_col"]
             action = movement["movement"]
             if action == "PRESS":
+                # print(f"PRESS: {action} in {row},{col}")
                 self.click_cell(row, col)
             elif action == "PLANT_FLAG":
+                # print(f"PLANT_FLAG: {action} in {row},{col}")
                 self.righ_click_cell(row, col)
             else:
                 print("ERROR: invalid movement ->", action)
