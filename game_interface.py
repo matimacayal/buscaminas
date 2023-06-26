@@ -102,7 +102,7 @@ class GameInterface():
         self.play_minesweeper()
     
     def execute(self, movements: list):
-        print("movements:", movements)
+        # print("movements:", movements)
         for movement in movements:
             row, col = movement["row_col"]
             action = movement["movement"]
