@@ -4,7 +4,8 @@ from robot_player import RobotPlayer
 import time
 
 def main():
-    TOTAL_MINES = 99
+    TOTAL_MINES = 200
+    start_time = time.time()
     game_interface = GameInterface(window_title="Minesweeper X")
     game_interface.initialize()
     robot_player = RobotPlayer(mines_total=TOTAL_MINES)
@@ -24,8 +25,8 @@ def main():
             game_interface.execute(next_moves)
         else:
             game_interface.restart_game()
-
-    print("EOS")
+    print(f"took {time.time() - start_time} s")
+    print("EOG")
 
 def test_ocr():
     start_time = time.time()
